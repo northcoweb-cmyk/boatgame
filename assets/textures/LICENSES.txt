@@ -1,0 +1,5 @@
+sand.jpg — derived from "Sand at Sunset Beach" (https://sketchfab.com/3d-models/sand-at-sunset-beach-1ac0847acae44ffe9c3783be28e82bcf)
+by Terrie Simmons-Ehrhardt (https://sketchfab.com/terrielsimmons), licensed CC-BY-4.0. Cropped, made tileable, flattened.
+
+water-detail.jpg — texture from "ocean wave" (https://sketchfab.com/3d-models/ocean-wave-f86f444dc7cc4458a0140f05a03c5896)
+by Andrea Marziano (https://sketchfab.com/3dartel), licensed CC-BY-4.0. Used as micro-detail for the water surface.

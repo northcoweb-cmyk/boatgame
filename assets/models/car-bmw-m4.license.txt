@@ -1,0 +1,11 @@
+Model Information:
+* title:	Bmw M4 F82
+* source:	https://sketchfab.com/3d-models/bmw-m4-f82-5d392c37794441d19c65fb1a5acbb19e
+* author:	3D Cars Studio (https://sketchfab.com/3DC_STUDIO)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Bmw M4 F82" (https://sketchfab.com/3d-models/bmw-m4-f82-5d392c37794441d19c65fb1a5acbb19e) by 3D Cars Studio (https://sketchfab.com/3DC_STUDIO) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

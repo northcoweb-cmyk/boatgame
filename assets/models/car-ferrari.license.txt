@@ -1,0 +1,11 @@
+Model Information:
+* title:	2018 Ferrari Portofino
+* source:	https://sketchfab.com/3d-models/2018-ferrari-portofino-4c71e8ff9c5a437c8e414bd71395d38b
+* author:	Ddiaz Design (https://sketchfab.com/ddiaz-design)
+
+Model License:
+* license type:	CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions must have the same license.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "2018 Ferrari Portofino" (https://sketchfab.com/3d-models/2018-ferrari-portofino-4c71e8ff9c5a437c8e414bd71395d38b) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)

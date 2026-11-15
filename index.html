@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Biscayne Drift</title>
+  <meta name="description" content="A chill, realistic open-world boating sandbox on Miami's Biscayne Bay. Wheel, gamepad and keyboard." />
+  <meta name="theme-color" content="#0b1a2b" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230b1a2b'/%3E%3Cpath d='M10 38c8-6 16-6 22 0s14 6 22 0' stroke='%235ff2ff' stroke-width='5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M18 30c6-12 22-14 30-4' stroke='%23ff8f7a' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="game" tabindex="0"></canvas>
+
+  <!-- loading -->
+  <div id="loading" class="screen">
+    <div class="brand"><div class="logo-wave"></div><div><h1>BISCAYNE DRIFT</h1><p>Coastal free roam · Miami</p></div></div>
+    <div class="load-bar"><div id="load-fill"></div></div>
+    <p id="load-text">Charting the bay…</p>
+  </div>
+
+  <!-- title -->
+  <div id="title" class="screen hidden">
+    <div class="title-left">
+      <div class="brand"><div class="logo-wave"></div><div><h1>BISCAYNE DRIFT</h1><p>Coastal free roam · Miami</p></div></div>
+      <nav class="menu" id="title-menu">
+        <button data-act="start" class="primary"><span class="ico">▶</span><span id="start-label">Click to start</span></button>
+        <button data-act="boats"><span class="ico">⛵</span>Boat selection</button>
+        <button data-act="settings"><span class="ico">⚙</span>Settings</button>
+        <button data-act="controls"><span class="ico">⌨</span>Controls</button>
+        <button data-act="logbook"><span class="ico">📖</span>Logbook</button>
+        <button data-act="credits"><span class="ico">©</span>Credits</button>
+      </nav>
+      <p class="tiny">Best in Chrome / Edge · Logitech G920, Xbox / PlayStation controllers and keyboard supported</p>
+    </div>
+    <div class="northco">N&nbsp;NorthCo</div>
+  </div>
+
+  <!-- HUD: minimal, the world dominates (reference sheet) -->
+  <div id="hud" class="hidden">
+    <div class="place-chip" id="hud-place"><span class="pin">⌖</span><b id="hud-place-name">Biscayne Bay</b></div>
+    <div class="mini-wrap"><canvas id="minimap" width="240" height="240"></canvas></div>
+    <div class="readout" id="hud-gauges">
+      <div class="r-speed"><b id="hud-speed">0</b><small id="hud-unit">kn</small></div>
+      <div class="r-row"><span>RPM</span><b id="hud-rpm">0</b></div>
+      <div class="r-row"><span>Gear</span><b id="hud-gear">N</b></div>
+      <div class="r-warn" id="hud-warn"></div>
+    </div>
+    <div class="details hidden" id="hud-details">
+      <div class="d-row"><span>Time</span><b id="hud-clock">5:12 PM</b></div>
+      <div class="d-row"><span>Weather</span><b><span id="hud-weather">☀</span> <span id="hud-temp">84°F</span></b></div>
+      <div class="d-row"><span>Wind</span><b><span id="hud-wind-arrow" class="wind">➤</span> <span id="hud-wind">8 kn SE</span></b></div>
+      <div class="d-row"><span>Depth</span><b id="hud-depth">— m</b></div>
+      <div class="d-row"><span>Hull</span><div class="meter"><i id="hud-hull"></i></div></div>
+      <div class="d-row"><span>Fuel</span><div class="meter"><i id="hud-fuel"></i></div></div>
+      <div class="d-row"><span>Trim</span><b id="hud-trim">0°</b></div>
+      <div class="d-row"><span>Radio</span><b id="hud-radio">—</b></div>
+      <div class="d-row vibe" id="hud-vibe"></div>
+    </div>
+    <div class="hud-controls hidden" id="hud-controls"></div>
+    <div class="prompt hidden" id="prompt"><kbd id="prompt-key">E</kbd><span id="prompt-text">Board boat</span></div>
+    <div class="action-menu hidden" id="action-menu"></div>
+    <div class="dock-info hidden" id="dock-info"></div>
+    <div class="toasts" id="toasts"></div>
+    <div class="crosshair hidden" id="crosshair"></div>
+    <div class="ammo hidden" id="ammo"></div>
+    <div class="alarm hidden" id="alarm">SHALLOW</div>
+    <div class="help-hint" id="help-hint">F1 controls · I details</div>
+  </div>
+
+  <!-- full-screen chart -->
+  <div id="chart" class="screen hidden">
+    <div class="chart-side glass">
+      <div class="brand small"><div class="logo-wave"></div><div><h1>BLUE BAY CHART</h1><p>Biscayne Bay, Miami</p></div></div>
+      <div class="legend">
+        <div><i class="lg you"></i>You</div><div><i class="lg dock"></i>Marina / dock</div><div><i class="lg dest"></i>Destination</div><div><i class="lg home"></i>Home base</div><div><i class="lg trail"></i>Your trail</div>
+      </div>
+      <p class="tiny">Depth contours: 1 m · 2 m · 5 m · 8 m. Mouse wheel / D-pad to zoom · drag to pan · R to centre.</p>
+      <button data-act="close-chart" class="primary">Close (M)</button>
+    </div>
+    <canvas id="chart-canvas"></canvas>
+  </div>
+
+  <!-- panels (settings / boats / logbook / controls / credits / inventory / calibration / pause) -->
+  <div id="panel" class="screen hidden"><div class="panel glass" id="panel-body"></div></div>
+  <div id="fade"></div>
+  <div id="fps" class="hidden"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
