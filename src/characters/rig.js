@@ -163,7 +163,7 @@ export class Character {
     const mats = S.mats.map((m) => {
       if (!tint) return m;
       const c = m.clone();
-      if (c.name === 'pant') c.color.set(SHIRTS[(rnd(1) * SHIRTS.length) | 0]).multiplyScalar(0.6);
+      if (c.name === 'pant') c.color.set(SHIRTS[(rnd(1) * SHIRTS.length) | 0]).multiplyScalar(0.85); // swim shorts
       else if (/172/.test(c.name)) { const s = SKIN[(rnd(2) * SKIN.length) | 0]; c.color.setRGB(s[0], s[1], s[2]); }
       else if (/40/.test(c.name)) c.color.setHSL(0.07, 0.3, 0.12 + rnd(3) * 0.35); // hair
       return c;
@@ -173,18 +173,8 @@ export class Character {
     this.mesh.bind(skeleton);
     this.mesh.castShadow = true;
     this.mesh.frustumCulled = false;
-    // a shirt: a tinted shell over the torso (keeps the base mesh, adds variety)
     this.object = new THREE.Group();
     this.object.add(this.mesh);
-    const shirtCol = SHIRTS[(rnd(4) * SHIRTS.length) | 0];
-    if (rnd(5) > 0.3) {
-      const shirt = new THREE.Mesh(new THREE.CylinderGeometry(S.height * 0.095, S.height * 0.088, S.height * 0.26, 14, 1, true),
-        new THREE.MeshStandardMaterial({ color: shirtCol, roughness: 0.85, side: THREE.DoubleSide }));
-      shirt.position.set(0, S.height * 0.16, 0);
-      shirt.scale.set(1.08, 1, 0.68);
-      this.bones.chest.add(shirt);
-      shirt.position.set(0, -S.height * 0.02, 0.005);
-    }
     this.scale = 0.94 + rnd(6) * 0.12;
     this.object.scale.setScalar(this.scale);
     this.t = rnd(7) * 10;

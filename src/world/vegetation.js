@@ -4,7 +4,7 @@
 // light procedural palm far away). Instance sets are rebuilt around the camera.
 import * as THREE from 'three';
 import { bakeModel } from '../assets/assets.js';
-import { ISLANDS, MARINAS, heightAt, shoreDistance, isBeachShore, WORLD_HALF } from './geography.js';
+import { ISLANDS, MARINAS, heightAt, shoreDistance, isBeachShore, isResidentialIsland, WORLD_HALF } from './geography.js';
 import { rng } from '../core/math.js';
 
 const windUniforms = { uTime: { value: 0 }, uWind: { value: new THREE.Vector2(0.6, -0.6) } };
@@ -93,6 +93,10 @@ export class Vegetation {
       }
     }
     for (const m of MARINAS) for (let i = 0; i < 10; i++) tryAdd(m.x - m.out[0] * (10 + R() * 30) + m.along[0] * (R() - 0.5) * m.width, m.z - m.out[1] * (10 + R() * 30) + m.along[1] * (R() - 0.5) * m.width);
+    for (let i = 0; i < 900 * density; i++) {
+      const x = -1600 + R() * 3720, z = -1100 + R() * 2050;
+      if (isResidentialIsland(x, z) && shoreDistance(x, z) > 12) tryAdd(x, z);
+    }
     for (const p of extraSpots) tryAdd(p.x + (R() - 0.5) * 4, p.z + (R() - 0.5) * 4);
     this.spots = spots;
 

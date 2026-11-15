@@ -3,7 +3,7 @@
 // berth registry used by the docking system. Moored boats bob on the real waves.
 import * as THREE from 'three';
 import { MARINAS, heightAt } from './geography.js';
-import { bakeToVertexColor, makeMatrix } from '../assets/assets.js';
+import { bakeToVertexColor, makeMatrix, addHullMask } from '../assets/assets.js';
 import { mergeAll } from './city.js';
 
 function plankTexture() {
@@ -186,6 +186,7 @@ export class Docks {
       im.count = n;
       im.castShadow = true;
       this.group.add(im);
+      addHullMask(im);
       return im;
     });
     for (const p of picks) {

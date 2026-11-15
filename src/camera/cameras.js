@@ -78,7 +78,9 @@ export class CameraRig {
     } else if (this.mode === 'chase' && boat) {
       const b = boat.phys.body;
       const fwd = _v2.set(0, 0, -1).applyQuaternion(b.quat); fwd.y = 0; fwd.normalize();
-      const d = boat.def.chase.dist, h = boat.def.chase.height;
+      // tied up alongside a dock: lift the camera so pilings and decks don't block the view
+      const docked = this.game.sea && this.game.sea.docked;
+      const d = boat.def.chase.dist * (docked ? 1.25 : 1), h = boat.def.chase.height * (docked ? 2.1 : 1);
       const sp = boat.phys.t.speed;
       const want = new THREE.Vector3().copy(boat.root.position).addScaledVector(fwd, -d - sp * 0.06).add(new THREE.Vector3(0, h + sp * 0.02, 0));
       // springy follow (critically damped)

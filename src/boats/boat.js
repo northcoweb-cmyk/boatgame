@@ -118,6 +118,24 @@ export class Boat {
     // ---- physics
     this.phys = new BoatPhysics(d);
     this.circles = hullCircles(d);
+    // ---- water mask: open-deck models have no floor, so the ocean would show
+    // inside the hull. An invisible depth-only cap at the waterline (drawn after
+    // the boat, before the water) hides it.
+    {
+      const pts = [];
+      const L = h.length, z0 = h.bow - this.com.z, hb = h.beam * 0.47;
+      const N = 14;
+      for (let i = 0; i <= N; i++) { const t = i / N; const w = t < 0.35 ? Math.sin((t / 0.35) * Math.PI / 2) : 1; pts.push(new THREE.Vector2(-hb * w, z0 + t * L)); }
+      for (let i = N; i >= 0; i--) { const t = i / N; const w = t < 0.35 ? Math.sin((t / 0.35) * Math.PI / 2) : 1; pts.push(new THREE.Vector2(hb * w, z0 + t * L)); }
+      const geo = new THREE.ShapeGeometry(new THREE.Shape(pts));
+      geo.rotateX(Math.PI / 2);
+      const mask = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }));
+      const wl = this.phys.restWaterlineY;
+      mask.position.y = Math.min(wl + 0.28, h.gunwale - this.com.y - 0.08);
+      mask.renderOrder = 0.5;
+      mask.name = 'water-mask';
+      this.root.add(mask);
+    }
     this.damage = new DamageVisuals(this.model);
     this.wake = { distAccum: 0 };
     this.paintId = paint; this.trimId = trim;

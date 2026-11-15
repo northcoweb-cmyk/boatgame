@@ -307,3 +307,23 @@ export function bakeToVertexColor(root, { filter = null, tint = null } = {}) {
   geo.computeBoundingBox();
   return geo;
 }
+
+// Depth-only waterline cap for instanced boats (hides water inside open hulls).
+// Shares the instance matrices of the boat mesh it is paired with.
+export function addHullMask(im, height = 0.62) {
+  const bb = im.geometry.boundingBox || (im.geometry.computeBoundingBox(), im.geometry.boundingBox);
+  const hw = (bb.max.x - bb.min.x) * 0.45, z0 = bb.min.z + 0.15, L = bb.max.z - bb.min.z - 0.3;
+  const pts = [];
+  for (let i = 0; i <= 12; i++) { const t = i / 12; const w = t < 0.35 ? Math.sin((t / 0.35) * Math.PI / 2) : 1; pts.push(new THREE.Vector2(-hw * w, z0 + t * L)); }
+  for (let i = 12; i >= 0; i--) { const t = i / 12; const w = t < 0.35 ? Math.sin((t / 0.35) * Math.PI / 2) : 1; pts.push(new THREE.Vector2(hw * w, z0 + t * L)); }
+  const geo = new THREE.ShapeGeometry(new THREE.Shape(pts));
+  geo.rotateX(Math.PI / 2);
+  geo.translate(0, height, 0);
+  const mask = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }), im.instanceMatrix.count);
+  mask.instanceMatrix = im.instanceMatrix;
+  mask.renderOrder = 0.5;
+  mask.frustumCulled = false;
+  mask.onBeforeRender = () => { mask.count = im.count; };
+  im.parent.add(mask);
+  return mask;
+}

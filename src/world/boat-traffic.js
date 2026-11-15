@@ -13,7 +13,7 @@
 //    hit: impulse exchange, damage, and sinking when their hull fails
 import * as THREE from 'three';
 import { heightAt, MARINAS, DESTINATIONS, SANDBARS, PLAY_LIMIT } from './geography.js';
-import { bakeToVertexColor } from '../assets/assets.js';
+import { bakeToVertexColor, addHullMask } from '../assets/assets.js';
 import { KNOT, clamp, wrapAngle, rng, smoothstep } from '../core/math.js';
 import { bus } from '../core/events.js';
 
@@ -52,6 +52,7 @@ export class BoatTraffic {
       const im = new THREE.InstancedMesh(geo, mat, count + 2);
       im.count = 0; im.castShadow = true; im.frustumCulled = false;
       this.group.add(im);
+      addHullMask(im);
       return im;
     });
     this.boats = [];

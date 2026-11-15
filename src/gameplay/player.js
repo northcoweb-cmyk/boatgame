@@ -76,6 +76,7 @@ export class Player {
   }
 
   takeHelm(boat) {
+    if (this.game.boat !== boat) this.game.setActiveBoat(boat);
     this.mode = 'helm';
     this.onBoat = boat;
     this.equip(null);
@@ -150,7 +151,17 @@ export class Player {
       let moved = false;
       if (g !== null && g - this.pos.y < 0.9 && !game.blockedOnFoot(nx, nz)) { this.pos.set(nx, g, nz); moved = true; }
       if (!moved) this.speed *= 0.5;
-      // boarding: stepping onto a boat's deck
+      // one-button boarding: E / A near any of your boats puts you at the helm
+      let near = null, nd = 1e9;
+      for (const b of game.boardableBoats()) {
+        const d = Math.hypot(b.root.position.x - this.pos.x, b.root.position.z - this.pos.z) - b.def.length * 0.5;
+        if (d < 7 && d < nd && b.phys.t.speed < 1.2) { nd = d; near = b; }
+      }
+      if (near) {
+        game.ui.prompt({ key: input.hint('interact'), text: `Board ${near.def.name}` }, 'board');
+        if (input.consume('engine')) { this.takeHelm(near); game.cams.setMode(game.lastBoatCam || 'chase'); bus.emit('board', { boat: near }); return; }
+      }
+      // or simply walk onto the deck
       for (const b of game.boardableBoats()) {
         b.root.updateMatrixWorld();
         _inv.copy(b.root.matrixWorld).invert();
@@ -163,9 +174,6 @@ export class Player {
           bus.emit('board', { boat: b });
           break;
         }
-        // prompt from the dock
-        const dist = Math.hypot(b.root.position.x - this.pos.x, b.root.position.z - this.pos.z);
-        if (dist < b.def.length * 0.7 + 3) game.ui.prompt({ key: 'Walk', text: `Step aboard ${b.def.name}` }, 'board');
       }
       const depth = -heightAt(this.pos.x, this.pos.z);
       this.wading = depth > 0.1;

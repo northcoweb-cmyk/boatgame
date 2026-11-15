@@ -230,8 +230,12 @@ export function waveAttenuation(depth) {
 }
 
 // Masks used for terrain colouring.
+export function isResidentialIsland(x, z) {
+  return (x > -1600 && x < 2120 && z > -1100 && z < 160) || (x > -750 && x < 950 && z > 150 && z < 950);
+}
 export function urbanMask(x, z) {
   const s = shoreDistance(x, z);
+  if (isResidentialIsland(x, z)) return 0; // lawns + landscaping around the villas
   if (isBeachShore(x, z)) return smoothstep(150, 240, s);
   return smoothstep(4, 18, s);
 }

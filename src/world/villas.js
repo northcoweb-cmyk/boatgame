@@ -6,7 +6,7 @@
 // player's HOME BASE: the Modern Luxury Villa with a private dock out back.
 import * as THREE from 'three';
 import { bakeModel, instanceParts, makeMatrix } from '../assets/assets.js';
-import { heightAt } from './geography.js';
+import { heightAt, SEAWALL_TOP } from './geography.js';
 import { mergeAll } from './city.js';
 
 const PASTELS = [0xf6c9b8, 0xb9e3df, 0xf7e2a8, 0xd9c8f0, 0xf3b7c6, 0xbfe0f5];
@@ -53,6 +53,7 @@ export class Villas {
     this.dockParts = dockParts;
 
     const mats = { modern: [], sea: [], small: [], proc: [] };
+    const paths = [];
     const dockMats = [];
     lots.forEach((lot, i) => {
       const angle = Math.atan2(lot.ox, lot.oz);
@@ -80,9 +81,13 @@ export class Villas {
       const dockLen = lot.home ? 26 : 18 + (i % 3) * 4;
       const sl = dockLen / this.dockLen;
       const dx = shoreX + lot.ox * dockLen / 2, dz = shoreZ + lot.oz * dockLen / 2;
-      const dm = new THREE.Matrix4().compose(new THREE.Vector3(dx, 0.75, dz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle), new THREE.Vector3(0.55, 1, sl));
+      const dockY = SEAWALL_TOP - this.dockDeckY - 0.12; // deck flush with the lawn / seawall cap
+      const dm = new THREE.Matrix4().compose(new THREE.Vector3(dx, dockY, dz), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle), new THREE.Vector3(0.55, 1, sl));
       dockMats.push(dm);
-      const deckY = 0.75 + this.dockDeckY;
+      const deckY = dockY + this.dockDeckY;
+      // paved garden path from the house to the head of the dock
+      paths.push({ x0: hx + lot.ox * 8, z0: hz + lot.oz * 8, x1: shoreX + lot.ox * 1.5, z1: shoreZ + lot.oz * 1.5, angle });
+      this.walkRects.push({ x: (hx + shoreX) / 2 + lot.ox * 4, z: (hz + shoreZ) / 2 + lot.oz * 4, hx: 1.6, hz: Math.hypot(shoreX - hx, shoreZ - hz) / 2 + 1, angle: -angle, y: Math.max(heightAt(shoreX - lot.ox * 3, shoreZ - lot.oz * 3), 2.3) + 0.05 });
       const dock = { x: dx, z: dz, ox: lot.ox, oz: lot.oz, len: dockLen, width: this.dockWidth * 0.55, deckY, home: !!lot.home, lot };
       this.docks.push(dock);
       this.walkRects.push({ x: dx, z: dz, hx: dock.width / 2, hz: dockLen / 2 + 2, angle: -angle, y: deckY });
@@ -108,6 +113,16 @@ export class Villas {
       this.group.add(inst);
     }
     this.group.add(instanceParts(dockParts, dockMats, { name: 'villa-docks' }));
+    // garden paths (light limestone pavers)
+    const pg = [];
+    for (const p of paths) {
+      const len = Math.hypot(p.x1 - p.x0, p.z1 - p.z0);
+      const g = new THREE.BoxGeometry(2.4, 0.12, len);
+      g.rotateY(p.angle);
+      g.translate((p.x0 + p.x1) / 2, Math.max(heightAt(p.x1 - (p.x1 - p.x0) * 0.5, p.z1 - (p.z1 - p.z0) * 0.5), 2.3) + 0.04, (p.z0 + p.z1) / 2);
+      pg.push(g);
+    }
+    if (pg.length) { const pm = new THREE.Mesh(mergeAll(pg), new THREE.MeshStandardMaterial({ color: 0xe8e1d2, roughness: 0.85 })); pm.receiveShadow = true; this.group.add(pm); }
     this.buildProcedural(mats.proc);
     game.scene.add(this.group);
   }

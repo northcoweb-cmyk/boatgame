@@ -5,7 +5,7 @@
 // spot, an ambient music emitter, and NPC spots for posed people.
 import * as THREE from 'three';
 import { heightAt, ISLANDS, SANDBARS, DESTINATIONS } from './geography.js';
-import { bakeModel, bakeToVertexColor, instanceParts, makeMatrix } from '../assets/assets.js';
+import { bakeModel, bakeToVertexColor, instanceParts, makeMatrix, addHullMask } from '../assets/assets.js';
 import { mergeAll } from './city.js';
 import { makeSign } from './marinas.js';
 import { LAYER_NO_REFLECT } from '../render/reflection.js';
@@ -143,7 +143,7 @@ export class Destinations {
     const boatModels = [game.assets.models.runabout, game.assets.models.yacht, game.assets.models.towboat];
     const types = [bakeToVertexColor(boatModels[0]), bakeToVertexColor(boatModels[1])];
     const bmat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.35 });
-    this.sandbarBoats = types.map((g) => { const m = new THREE.InstancedMesh(g, bmat, 6); m.count = 0; m.castShadow = true; this.group.add(m); return m; });
+    this.sandbarBoats = types.map((g) => { const m = new THREE.InstancedMesh(g, bmat, 6); m.count = 0; m.castShadow = true; this.group.add(m); addHullMask(m); return m; });
     for (let k = 0; k < 7; k++) {
       const a = (k / 7) * Math.PI * 2;
       const x = sb.x + Math.cos(a) * sb.a * 0.65 * 0.9, z = sb.z + Math.sin(a) * sb.b * 0.9;

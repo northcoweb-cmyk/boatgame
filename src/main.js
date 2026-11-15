@@ -145,6 +145,7 @@ class Game {
     this.reflection.enabled = S.reflections;
     this.post = new PostFX(renderer);
     this.post.setSamples(S.aa === 'msaa' ? this.quality.msaa : 0);
+    this.post.composite.uniforms.uFxaa.value = S.aa === 'fxaa' || (S.aa === 'msaa' && !this.quality.msaa) ? 1 : 0;
     this.post.bloomEnabled = S.bloom;
     this.wake = new WakeSystem(renderer, this.quality.preset);
     this.scene.add(this.wake.spray);
@@ -395,7 +396,7 @@ class Game {
       const y = this.villas.home.yard;
       this.player.spawnAt(y.x, y.z, Math.atan2(this.villas.home.lot.ox, this.villas.home.lot.oz));
       this.cams.setMode('foot');
-      this.ui.toast('Welcome home — walk down to your dock and step aboard', 6);
+      this.ui.toast(`Welcome home — walk to your dock and press ${this.input.hint('interact')} to board`, 6);
       this.ui.toggleControls(true);
       setTimeout(() => this.ui.toggleControls(false), 12000);
     } else if (p.mode === 'helm') {
@@ -519,7 +520,7 @@ class Game {
     this.sun.castShadow = S.shadows;
     this.post.bloomEnabled = S.bloom;
     this.post.setSamples(S.aa === 'msaa' ? this.quality.msaa || 4 : 0);
-    this.post.composite.uniforms.uFxaa.value = S.aa === 'fxaa' ? 1 : 0;
+    this.post.composite.uniforms.uFxaa.value = S.aa === 'fxaa' || (S.aa === 'msaa' && !this.quality.msaa) ? 1 : 0;
     this.vegetation.farDist = S.drawDistance;
     this.vegetation._last.set(1e9, 0, 0);
     this.day.dayMinutes = S.dayMinutes;

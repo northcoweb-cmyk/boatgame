@@ -126,7 +126,7 @@ export function buildCity(game) {
     t.meshes.push(o); t.box.union(bb);
   });
   towers.sort((a, b) => a.cx - b.cx);
-  const heroCount = { low: 0, medium: 4, high: 7, ultra: 7 }[game.quality.preset] ?? 7;
+  const heroCount = { low: 5, medium: 10, high: 14, ultra: 14 }[game.quality.preset] ?? 14;
   const sites = game.data.heroTowers;
   for (let i = 0; i < Math.min(heroCount, sites.length, towers.length); i++) {
     const tw = towers[i % towers.length], site = sites[i];
@@ -137,8 +137,8 @@ export function buildCity(game) {
       c.position.x -= (tw.box.min.x + tw.box.max.x) / 2;
       c.position.z -= (tw.box.min.z + tw.box.max.z) / 2;
       c.material = m.material.clone();
-      if (/glass/i.test(c.material.name)) { c.material.color.setRGB(0.36, 0.52, 0.62); c.material.roughness = 0.08; c.material.metalness = 0.75; c.material.transparent = false; c.material.opacity = 1; c.material.depthWrite = true; }
-      else { c.material.color.setRGB(0.92, 0.93, 0.92); }
+      if (/glass/i.test(c.material.name)) { c.material.color.setRGB(0.5, 0.66, 0.76); c.material.roughness = 0.12; c.material.metalness = 0.35; c.material.transparent = false; c.material.opacity = 1; c.material.depthWrite = true; }
+      else { c.material.color.setRGB(0.95, 0.95, 0.93); c.material.roughness = 0.6; }
       c.castShadow = false; c.receiveShadow = true;
       tg.add(c);
     }
@@ -146,6 +146,7 @@ export function buildCity(game) {
     tg.scale.setScalar(s);
     tg.position.set(site.x, heightAt(site.x, site.z) - 0.5, site.z);
     tg.rotation.y = (i * 1.3) % Math.PI;
+    tg.traverse((o) => { if (o.isMesh) o.material.envMapIntensity = 1.2; });
     group.add(tg);
     tops.push(new THREE.Vector3(site.x, site.h + 1, site.z));
   }
