@@ -87,6 +87,7 @@ export class ChartMap {
     for (const m of MARINAS) list.push({ x: m.x, z: m.z, c: '#ffd166', label: m.name, icon: '⚓' });
     for (const d of DESTINATIONS) if (d.kind !== 'marina') list.push({ x: d.x, z: d.z, c: '#ff8f7a', label: d.name, icon: d.kind === 'lighthouse' ? '✦' : '●' });
     if (g.villas.home) list.push({ x: g.villas.home.lot.x, z: g.villas.home.lot.z, c: '#ffffff', label: 'Home', icon: '⌂' });
+    if (g.jobs) list.push(...g.jobs.markers());
     return list;
   }
 

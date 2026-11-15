@@ -59,7 +59,15 @@ export class Player {
     this.targets = [];
   }
 
+  // parent the character to a boat (local coords) or back to the world
+  attachTo(parent) {
+    const o = this.char.object;
+    if (o.parent === parent) return;
+    if (parent) parent.add(o); else this.game.scene.add(o);
+  }
+
   spawnAt(x, z, yaw) {
+    this.attachTo(null);
     this.mode = 'foot';
     this.onBoat = null;
     this.pos.set(x, this.game.groundHeightAt(x, z), z);
@@ -139,8 +147,9 @@ export class Player {
         }
       }
       this.pos.copy(this.local).applyMatrix4(boat.root.matrixWorld);
-      ch.object.position.copy(this.pos);
-      ch.object.rotation.set(0, this.yaw, 0);
+      this.attachTo(boat.root);
+      ch.object.position.copy(this.local);
+      ch.object.rotation.set(0, this.yaw - bYaw, 0);
       // helm prompt
       const dh = this.local.distanceTo(_v.copy(boat.helmPos).setY(this.local.y));
       game.ui.prompt(dh < 1.8 ? { key: input.hint('interact'), text: 'Take the helm' } : null, 'helm');
@@ -177,6 +186,7 @@ export class Player {
       }
       const depth = -heightAt(this.pos.x, this.pos.z);
       this.wading = depth > 0.1;
+      this.attachTo(null);
       ch.object.position.copy(this.pos);
       ch.object.rotation.set(0, this.yaw, 0);
     }
@@ -195,19 +205,25 @@ export class Player {
   }
 
   updateHelm(dt, input, game) {
-    const boat = this.onBoat || game.boat;
+    const boat = game.boat;
     if (!boat) { this.mode = 'foot'; return; }
+    this.onBoat = boat;
     const ch = this.char;
-    // driver posed at the wheel, parented visually to the boat transform
-    boat.root.updateMatrixWorld();
+    // the driver is a real child of the hull: he rides every pitch, roll and
+    // slam with the boat and can never be left behind in the water
+    this.attachTo(boat.root);
     const standing = boat.def.helm.pose === 'stand';
     this.local.copy(boat.helmPos);
-    if (!standing) this.local.y -= 0.42;
+    if (!standing) { this.local.y -= 0.86; this.local.z += 0.12; } // hips (0.95 m in the rig) onto the seat cushion
+    ch.object.position.copy(this.local);
+    ch.object.rotation.set(0, Math.PI, 0);
+    boat.root.updateMatrixWorld();
     this.pos.copy(this.local).applyMatrix4(boat.root.matrixWorld);
-    ch.object.position.copy(this.pos);
-    ch.object.quaternion.copy(boat.root.quaternion).multiply(new THREE.Quaternion().setFromAxisAngle(_v.set(0, 1, 0), Math.PI));
     ch.pose = standing ? 'standDrive' : 'drive';
-    ch.update(dt, { steer: -boat.phys.rudder / boat.def.rudder.maxAngle, lean: clamp(-boat.phys.t.latAccel / 9, -0.6, 0.6) });
+    // body lean follows the sustained turn load only (heavily low-passed): wave
+    // knocks are absorbed by the seat and grip, not by swaying the torso
+    this._lean = (this._lean || 0) + (clamp(-boat.phys.t.latAccel / 16, -0.22, 0.22) - (this._lean || 0)) * Math.min(1, dt * 1.6);
+    ch.update(dt, { steer: -boat.phys.rudder / boat.def.rudder.maxAngle, lean: this._lean });
     const helmCam = game.cams.mode === 'helm';
     ch.object.visible = !helmCam;
     // first-person forearms: from just below/beside the camera to grips on the wheel rim

@@ -13,16 +13,22 @@
 //    hit: impulse exchange, damage, and sinking when their hull fails
 import * as THREE from 'three';
 import { heightAt, MARINAS, DESTINATIONS, SANDBARS, PLAY_LIMIT } from './geography.js';
-import { bakeToVertexColor, addHullMask } from '../assets/assets.js';
+import { bakeToVertexColor, addHullMask, bakeModel } from '../assets/assets.js';
+import { measureHull, deckPoint } from '../boats/hull-fit.js';
+import { sailboatGeometry, jetskiGeometry } from './harbor.js';
 import { KNOT, clamp, wrapAngle, rng, smoothstep } from '../core/math.js';
 import { bus } from '../core/events.js';
 
 const TYPES = [
-  { model: 'runabout', len: 6.7, beam: 2.5, mass: 1400, cruise: [16, 26], weight: 5 },
-  { model: 'yacht', len: 11.8, beam: 3.9, mass: 13000, cruise: [12, 20], weight: 3 },
-  { model: 'rib', len: 4.1, beam: 1.9, mass: 300, cruise: [8, 12], weight: 2 },
-  { model: 'bass', len: 6.6, beam: 2.3, mass: 1150, cruise: [20, 34], weight: 2 },
-  { model: 'towboat', len: 11.2, beam: 3.8, mass: 6000, cruise: [14, 20], weight: 1, tow: true },
+  { model: 'runabout', len: 6.7, beam: 2.5, mass: 1400, cruise: [16, 26], weight: 5,
+    crew: [{ u: 0.665, v: 0, pose: 'stand' }, { u: 0.2, v: 0.15, pose: 'woman', face: Math.PI }, { u: 0.86, v: -0.3, pose: 'woman' }] },
+  { model: 'yacht', len: 11.8, beam: 3.9, mass: 13000, cruise: [12, 20], weight: 3,
+    crew: [{ u: 0.63, v: 0.56, pose: 'sit' }, { u: 0.84, v: -0.3, pose: 'woman' }, { u: 0.84, v: 0.3, pose: 'woman2' }, { u: 0.72, v: -0.5, pose: 'stand' }] },
+  { model: 'rib', len: 4.1, beam: 1.9, mass: 300, cruise: [8, 12], weight: 2, crew: [{ u: 0.76, v: 0, pose: 'stand' }, { u: 0.25, v: 0, pose: 'woman2' }] },
+  { model: 'bass', len: 6.6, beam: 2.3, mass: 1150, cruise: [20, 34], weight: 2, crew: [{ u: 0.62, v: 0.3, pose: 'sit' }, { u: 0.5, v: -0.3, pose: 'sit' }] },
+  { model: 'towboat', len: 11.2, beam: 3.8, mass: 6000, cruise: [14, 20], weight: 1, tow: true, crew: [{ u: 0.5, v: 0.2, pose: 'stand' }, { u: 0.7, v: -0.2, pose: 'stand' }] },
+  { proc: 'sail', len: 10.5, beam: 3.3, mass: 5000, cruise: [5, 7], weight: 3, sail: true, crew: [] },
+  { proc: 'jetski', len: 3.2, beam: 1.15, mass: 380, cruise: [24, 40], weight: 2, jet: true, crew: [] },
 ];
 
 function waterLineClear(ax, az, bx, bz, minDepth = 1.6, lateral = 14) {
@@ -47,25 +53,60 @@ export class BoatTraffic {
     this.buildGraph();
     // baked, instanced models per type
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.05 });
+    const procMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.4, metalness: 0.02, side: THREE.DoubleSide });
     this.typeMeshes = TYPES.map((t) => {
-      const geo = bakeToVertexColor(game.assets.models[t.model], { filter: (o) => !/Passanger/.test(o.name + (o.material && o.material.name)) });
-      const im = new THREE.InstancedMesh(geo, mat, count + 2);
+      const geo = t.proc === 'sail' ? sailboatGeometry() : t.proc === 'jetski' ? jetskiGeometry()
+        : bakeToVertexColor(game.assets.models[t.model], { filter: (o) => !/Passanger/.test(o.name + (o.material && o.material.name)) });
+      const im = new THREE.InstancedMesh(geo, t.proc ? procMat : mat, count + 2);
       im.count = 0; im.castShadow = true; im.frustumCulled = false;
       this.group.add(im);
-      addHullMask(im);
+      if (!t.proc) addHullMask(im);
+      // crew slots ray-cast onto the real deck of the model (model space)
+      t.crewLocal = [];
+      if (!t.proc && t.crew.length) {
+        const model = game.assets.models[t.model];
+        const h = measureHull(model), H = h.gunwale - h.keel;
+        for (const c of t.crew) {
+          const stand = c.pose === 'stand';
+          const p = deckPoint(model, c.v * h.beam * 0.45, h.bow + c.u * h.length, stand ? h.keel + H * 0.75 : h.gunwale + 0.35, h.keel + H * 0.55);
+          if (c.pose === 'sit') { p.y -= 0.86; p.z += 0.12; }
+          t.crewLocal.push({ pose: c.pose === 'sit' ? 'manSit' : stand ? 'manStand' : c.pose === 'woman' ? 'seatA' : 'seatB',
+            m: new THREE.Matrix4().compose(p, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), (c.face || 0) + Math.PI), new THREE.Vector3(1, 1, 1)) });
+        }
+      }
+      if (t.proc === 'sail') t.crewLocal.push(
+        { pose: 'manStand', m: new THREE.Matrix4().compose(new THREE.Vector3(0.3, 1.32, 3.7), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI), new THREE.Vector3(1, 1, 1)) },
+        { pose: 'seatB', m: new THREE.Matrix4().compose(new THREE.Vector3(-0.8, 1.35, 2.2), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2), new THREE.Vector3(1, 1, 1)) });
       return im;
     });
+    this.capacity = count + 2;
     this.boats = [];
     const totalW = TYPES.reduce((s, t) => s + t.weight, 0);
     for (let i = 0; i < count; i++) {
       let r = this.R() * totalW, ti = 0;
       while (r > TYPES[ti].weight) { r -= TYPES[ti].weight; ti++; }
       if (i === 0) ti = 4; // always one TowBoatUS on patrol
+      if (i === 1 || i === 2) ti = 5; // sailors are always out
+      if (i === 3) ti = 6;
       this.boats.push(this.spawn(ti));
     }
     game.scene.add(this.group);
     this._m = new THREE.Matrix4(); this._q = new THREE.Quaternion(); this._e = new THREE.Euler(); this._p = new THREE.Vector3(); this._s = new THREE.Vector3(1, 1, 1);
     this.towRequest = null;
+  }
+
+  // crews from the attached people models (posed men, seated women scans)
+  addCrew(people) {
+    const A = this.game.assets;
+    const n = this.capacity * 3;
+    const mk = (parts) => parts.map((p) => { const im = new THREE.InstancedMesh(p.geometry, p.material, n); im.count = 0; im.castShadow = true; im.frustumCulled = false; this.group.add(im); return im; });
+    this.crewMeshes = {
+      manStand: mk([{ geometry: people.manStand, material: people.manMats }]),
+      manSit: mk([{ geometry: people.manSit, material: people.manMats }]),
+      seatA: mk(bakeModel(A.models.womanSeatedA)),
+      seatB: mk(bakeModel(A.models.womanSeatedB)),
+    };
+    this._cm = new THREE.Matrix4();
   }
 
   buildGraph() {
@@ -147,6 +188,7 @@ export class BoatTraffic {
     // build a list of vessels for collision regs: AI + player
     const P = player ? { x: player.pos.x, z: player.pos.z, heading: player.phys.heading, speed: player.phys.t.speed, len: player.def.length, isPlayer: true } : null;
     const counts = this.typeMeshes.map(() => 0);
+    const crewCounts = { manStand: 0, manSit: 0, seatA: 0, seatB: 0 };
     for (const b of boats) {
       // ---------------------------------------------- navigation
       const n = this.nodes[b.target];
@@ -237,11 +279,11 @@ export class BoatTraffic {
       const wh = (x, z) => waves.heightFast(x, z, time) + (near ? this.game.wake.heightAt(x, z) : 0);
       const hb = wh(b.x + fx * L2, b.z + fz * L2), hs = wh(b.x - fx * L2, b.z - fz * L2);
       const hp = wh(b.x - fz * B2, b.z + fx * B2), hst = wh(b.x + fz * B2, b.z - fx * B2);
-      const planeLift = smoothstep(4, 12, b.speed) * 0.25;
+      const planeLift = b.t.sail ? 0 : smoothstep(4, 12, b.speed) * (b.t.jet ? 0.12 : 0.25);
       const ty = (hb + hs + hp + hst) / 4 + planeLift - (b.sinking ? b.sinking * 0.12 : 0);
       b.y += (ty - b.y) * Math.min(1, dt * 6);
       b.pitch += ((Math.atan2(hb - hs, b.t.len * 0.8) + smoothstep(3, 9, b.speed) * 0.05 * (1 - smoothstep(10, 18, b.speed)) + 0.03 * smoothstep(8, 14, b.speed)) - b.pitch) * Math.min(1, dt * 4);
-      b.roll += ((Math.atan2(hp - hst, b.t.beam * 0.9) - wrapAngle(desired - b.heading) * 0.1 * Math.min(1, b.speed / 8) + (b.sinking ? Math.min(0.5, b.sinking * 0.03) : 0)) - b.roll) * Math.min(1, dt * 4);
+      b.roll += ((Math.atan2(hp - hst, b.t.beam * 0.9) - wrapAngle(desired - b.heading) * 0.1 * Math.min(1, b.speed / 8) + (b.sinking ? Math.min(0.5, b.sinking * 0.03) : 0) + (b.t.sail ? 0.2 + Math.sin(time * 0.3 + b.cruise) * 0.04 : 0) - (b.t.jet ? wrapAngle(desired - b.heading) * 0.5 : 0)) - b.roll) * Math.min(1, dt * 4);
 
       // collider
       const c = b.collider;
@@ -250,10 +292,17 @@ export class BoatTraffic {
       // render
       this._e.set(b.pitch, -b.heading, b.roll, 'YXZ');
       this._q.setFromEuler(this._e);
-      this._p.set(b.x, b.y - 0.35, b.z);
+      this._p.set(b.x, b.y + (b.t.sail ? -0.42 : b.t.jet ? -0.16 : -0.35), b.z);
       const im = this.typeMeshes[b.ti];
       b.idx = counts[b.ti]++;
       im.setMatrixAt(b.idx, this._m.compose(this._p, this._q, this._s));
+      if (this.crewMeshes && !b.sinking && Math.abs(b.x - camPos.x) + Math.abs(b.z - camPos.z) < 900) {
+        for (const c of b.t.crewLocal) {
+          this._cm.multiplyMatrices(this._m, c.m);
+          for (const cim of this.crewMeshes[c.pose]) cim.setMatrixAt(crewCounts[c.pose], this._cm);
+          crewCounts[c.pose]++;
+        }
+      }
 
       // wakes near the camera
       if (near && !b.sinking) {
@@ -266,6 +315,7 @@ export class BoatTraffic {
       }
     }
     this.typeMeshes.forEach((im, i) => { im.count = counts[i]; im.instanceMatrix.needsUpdate = true; });
+    if (this.crewMeshes) for (const k in this.crewMeshes) for (const cim of this.crewMeshes[k]) { cim.count = crewCounts[k]; cim.instanceMatrix.needsUpdate = true; }
   }
 
   // nearest AI boats (for positional engine audio)

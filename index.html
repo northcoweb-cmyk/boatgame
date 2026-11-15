@@ -42,11 +42,13 @@
   <!-- HUD: minimal, the world dominates (reference sheet) -->
   <div id="hud" class="hidden">
     <div class="place-chip" id="hud-place"><span class="pin">⌖</span><b id="hud-place-name">Biscayne Bay</b></div>
+    <div class="objective hidden" id="objective"></div>
     <div class="mini-wrap"><canvas id="minimap" width="240" height="240"></canvas></div>
     <div class="readout" id="hud-gauges">
       <div class="r-speed"><b id="hud-speed">0</b><small id="hud-unit">kn</small></div>
       <div class="r-row"><span>RPM</span><b id="hud-rpm">0</b></div>
       <div class="r-row"><span>Gear</span><b id="hud-gear">N</b></div>
+      <div class="r-row"><span>Tilt</span><b id="hud-ptrim">0</b></div>
       <div class="r-warn" id="hud-warn"></div>
     </div>
     <div class="details hidden" id="hud-details">
@@ -65,6 +67,7 @@
     <div class="action-menu hidden" id="action-menu"></div>
     <div class="dock-info hidden" id="dock-info"></div>
     <div class="toasts" id="toasts"></div>
+    <div class="jobs-board glass hidden" id="jobs-board"></div>
     <div class="crosshair hidden" id="crosshair"></div>
     <div class="ammo hidden" id="ammo"></div>
     <div class="alarm hidden" id="alarm">SHALLOW</div>

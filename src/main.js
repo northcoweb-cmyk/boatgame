@@ -21,6 +21,8 @@ import { Destinations } from './world/destinations.js';
 import { Vegetation } from './world/vegetation.js';
 import { Props } from './world/props.js';
 import { Wildlife } from './world/wildlife.js';
+import { Harbor } from './world/harbor.js';
+import { Jobs } from './gameplay/jobs.js';
 import { BoatTraffic } from './world/boat-traffic.js';
 import { People } from './characters/people.js';
 import { CollisionWorld, resolveBoatCollisions } from './physics/collision.js';
@@ -206,7 +208,19 @@ class Game {
     // promenade walkers along the Bayside waterfront + marina piers + home street
     spots.walkers.push({ path: [[-2250, -1180], [-2250, -380]], phase: 0.1 }, { path: [[-2252, -1100], [-2252, -300]], phase: 0.6 }, { path: [[-2262, -980], [-2262, -420]], phase: 0.3 });
     for (const m of MARINAS) spots.walkers.push({ path: [[m.x + m.out[0] * 4.7 - m.along[0] * 80, m.z + m.out[1] * 4.7 - m.along[1] * 80], [m.x + m.out[0] * 4.7 + m.along[0] * 80, m.z + m.out[1] * 4.7 + m.along[1] * 80]], phase: 0.5 });
+    // residents: someone on most neighbouring villa docks + small yard gatherings
+    this.villas.docks.forEach((d, i) => {
+      if (d.home) return;
+      const outX = d.x + d.ox * (d.len / 2 - 1.5), outZ = d.z + d.oz * (d.len / 2 - 1.5);
+      const face = Math.atan2(d.ox, d.oz);
+      if (i % 3 !== 2) spots.stand.push({ x: outX - d.oz * 0.6, y: d.deckY, z: outZ + d.ox * 0.6, face });
+      if (i % 2 === 0) spots.seated.push({ x: outX + d.oz * 0.7, y: d.deckY + 0.02, z: outZ - d.ox * 0.7, face });
+      const yx = d.lot.x + d.lot.ox * 9, yz = d.lot.z + d.lot.oz * 9, yy = Math.max(heightAt(yx, yz), 2.3);
+      if (i % 4 === 1) for (let k = 0; k < 3; k++) spots.stand.push({ x: yx + Math.cos(k * 2.1) * 1.6, y: yy, z: yz + Math.sin(k * 2.1) * 1.6, face: k * 2.1 + Math.PI });
+    });
     this.people.populate(spots);
+    this.traffic.addCrew(this.people);
+    this.harbor = new Harbor(this);
 
     // ------------------------------------------------ gameplay + io
     this.input = new InputManager(this.save);
@@ -220,6 +234,7 @@ class Game {
     this.ui.fade = (t, mid) => this.menus.fade(t, mid);
     this.logbook = new Logbook(this);
     this.map = new ChartMap(this);
+    this.jobs = new Jobs(this);
     this.menus = new Menus(this);
     this.input.onWheelConnected = (gp, needs) => {
       this.ui.toast(`Wheel connected: ${gp.id.split('(')[0].trim()}`);
@@ -645,6 +660,7 @@ class Game {
     if (I.consume('radioPrev')) this.audio.setStation(((this.audio.stationIndex + 4) % 4) - 1);
     if (I.has('mapZoomIn') && !this.ui.menuOpts.length) this.map.miniZoom = Math.min(4, this.map.miniZoom * 1.4);
     if (I.has('mapZoomOut') && !this.ui.menuOpts.length) this.map.miniZoom = Math.max(0.35, this.map.miniZoom / 1.4);
+    this.jobs.update(dt, this.time);
     if (I.consume('details')) this.ui.toggleDetails();
     if (I.consume('help')) this.ui.toggleControls();
     if (I.consume('inventory') && pl.mode === 'foot') { this.pauseGame(true); this.menus.show('inventory'); return; }
@@ -690,6 +706,9 @@ class Game {
       inp.throttle = drone || tied ? 0 : s.throttle;
       inp.reverse = drone || tied ? 0 : s.reverse;
       inp.thruster = s.thruster;
+      // outboard power trim (hold): tuck for the hole shot, trim out on plane
+      if (I.has('trimUp')) b.phys.engineTrim = Math.min(1, b.phys.engineTrim + dt * 0.45);
+      if (I.has('trimDown')) b.phys.engineTrim = Math.max(-1, b.phys.engineTrim - dt * 0.45);
       if (tied && (s.throttle > 0.3 || s.reverse > 0.3) && Math.random() < dt) this.ui.toast(`Tied up — choose "Cast off" (${I.device === 'keyboard' ? 'number key' : 'D-pad + A'})`);
       if (sea.hangout && (s.throttle > 0.2 || s.reverse > 0.2 || Math.abs(s.steer) > 0.5)) this.menuAction('hangout');
       this.steerRate = (s.steer - (this._lastSteer || 0)) / Math.max(dt, 1e-3);
@@ -780,6 +799,7 @@ class Game {
     this.props.update(dt, this.time, this.waves, day.night, this.camera.position, _cur);
     this.wildlife.update(dt, this.time, this.waves, idle ? null : b, this.camera.position);
     this.people.update(dt, this.time);
+    this.harbor.update(dt, this.time, this.waves, day.night, this.camera.position);
     this.roads.update(dt, day.night, this.camera.position);
     this.villas.update(day.night);
     this.vegetation.update(this.time, this.camera.position, this.waves.windVector(_wind));

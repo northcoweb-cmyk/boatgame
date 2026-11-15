@@ -47,15 +47,32 @@ ${NOISE_GLSL}`)
   vec2 cell = vec2(floor(fx), floor(fy));
   vec2 f = vec2(fract(fx), fract(fy));
   float glass = vBld.y;
-  float ww = mix(0.52, 0.86, glass), wh = mix(0.42, 0.74, glass);
-  float win = step(abs(f.x - 0.5), ww * 0.5) * step(abs(f.y - 0.55), wh * 0.5) * wall * step(4.0, vFWorld.y) * step(vFWorld.y, vBld.x - 2.0);
+  float H = vBld.x;
+  // building style from its hash: 0 = glass curtain-wall tower, 1 = white
+  // balcony condo, 2 = pastel Art-Deco / MiMo low-rise with punched windows
+  float sty = H > 34.0 ? (vHash > 0.45 || glass > 0.5 ? 0.0 : 1.0) : 2.0;
+  float isGlass = step(sty, 0.5), isCondo = step(0.5, sty) * step(sty, 1.5), isDeco = step(1.5, sty);
+  float ww = mix(mix(0.52, 0.86, glass), 0.96, isGlass), wh = mix(mix(0.42, 0.74, glass), 0.9, isGlass);
+  ww = mix(ww, 0.34, isDeco); wh = mix(wh, 0.5, isDeco);
+  float win = step(abs(f.x - 0.5), ww * 0.5) * step(abs(f.y - 0.55), wh * 0.5) * wall * step(4.0, vFWorld.y) * step(vFWorld.y, H - 2.0);
   float r = bdHash(cell + vec2(vHash * 97.0, floor(vHash * 1000.0)));
-  // daytime glass: dark blue-grey, sky-reflective
-  // dark glazing, white balcony slab at each floor line, warm stucco walls
+  vec3 pastel[4];
+  pastel[0] = vec3(0.98, 0.86, 0.80); pastel[1] = vec3(0.80, 0.93, 0.90); pastel[2] = vec3(0.99, 0.95, 0.80); pastel[3] = vec3(0.95, 0.95, 0.93);
+  vec3 deco = pastel[int(mod(floor(vHash * 37.0), 4.0))];
   diffuseColor.rgb *= vec3(1.0, 0.97, 0.92);
-  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.045, 0.07, 0.10), vec3(0.10, 0.17, 0.24), r * 0.7 + glass * 0.3), win * 0.92);
-  float slab = step(0.9, f.y) * wall * step(4.0, vFWorld.y);
+  diffuseColor.rgb = mix(diffuseColor.rgb, deco * 0.95, isDeco * wall * 0.85);
+  // glass towers: blue-green tinted panels with per-panel variation and thin mullions
+  vec3 gPanel = mix(vec3(0.10, 0.20, 0.26), vec3(0.20, 0.34, 0.40), r * 0.6 + 0.2 * sin(vFWorld.y * 0.05 + vHash * 6.0));
+  vec3 winCol = mix(mix(vec3(0.045, 0.07, 0.10), vec3(0.10, 0.17, 0.24), r * 0.7 + glass * 0.3), gPanel, isGlass);
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.75, 0.78, 0.8), vec3(0.15, 0.22, 0.27), isGlass), isGlass * wall * step(4.0, vFWorld.y));
+  diffuseColor.rgb = mix(diffuseColor.rgb, winCol, win * 0.92);
+  float slab = step(0.9, f.y) * wall * step(4.0, vFWorld.y) * (isCondo + isDeco * 0.4 + isGlass * 0.15);
   diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.92, 0.9), slab * 0.85);
+  // podium / lobby band
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.18, 0.2, 0.22), wall * (1.0 - step(4.0, vFWorld.y)) * 0.6);
+  // flat roofs: light grey membrane with darker equipment patches
+  float roof = 1.0 - wall;
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.62, 0.62, 0.6), vec3(0.4, 0.42, 0.43), step(0.7, bdHash(floor(vFWorld.xz / 4.0)))), roof * 0.8);
   // lit windows at night: warm & cool interiors, some dark
   float lit = step(1.0 - (0.18 + 0.5 * uNight), r) * win;
   vec3 warm = mix(vec3(1.0, 0.72, 0.42), vec3(0.75, 0.85, 1.0), step(0.78, bdHash(cell * 1.7 + vHash)));
@@ -66,11 +83,11 @@ ${NOISE_GLSL}`)
   totalEmissiveRadiance += crownCol * crown * uNight * 3.0;
   // street-level retail glow
   totalEmissiveRadiance += vec3(1.0, 0.82, 0.55) * wall * (1.0 - smoothstep(0.5, 4.0, vFWorld.y - 2.4)) * uNight * 0.6 * step(0.4, r);
-  roughnessFactor = mix(roughnessFactor, 0.12, win);
-  metalnessFactor = mix(metalnessFactor, 0.55, win * glass);
+  roughnessFactor = mix(roughnessFactor, 0.08, max(win, isGlass * wall));
+  metalnessFactor = mix(metalnessFactor, 0.7, max(win * glass, isGlass * wall * 0.9));
 }`);
   };
-  mat.customProgramCacheKey = () => 'facade-v1';
+  mat.customProgramCacheKey = () => 'facade-v2';
   return mat;
 }
 
@@ -137,7 +154,9 @@ export function buildCity(game) {
       c.position.x -= (tw.box.min.x + tw.box.max.x) / 2;
       c.position.z -= (tw.box.min.z + tw.box.max.z) / 2;
       c.material = m.material.clone();
-      if (/glass/i.test(c.material.name)) { c.material.color.setRGB(0.5, 0.66, 0.76); c.material.roughness = 0.12; c.material.metalness = 0.35; c.material.transparent = false; c.material.opacity = 1; c.material.depthWrite = true; }
+      c.material.transparent = false; c.material.opacity = 1; c.material.alphaTest = 0; c.material.alphaMap = null; c.material.depthWrite = true; c.material.side = THREE.FrontSide;
+      if ('transmission' in c.material) c.material.transmission = 0;
+      if (/glass|window|mirror/i.test(c.material.name) || (c.material.map === null && c.material.metalness > 0.3)) { c.material.color.setRGB(0.5, 0.66, 0.76); c.material.roughness = 0.12; c.material.metalness = 0.35; c.material.transparent = false; c.material.opacity = 1; c.material.depthWrite = true; }
       else { c.material.color.setRGB(0.95, 0.95, 0.93); c.material.roughness = 0.6; }
       c.castShadow = false; c.receiveShadow = true;
       tg.add(c);

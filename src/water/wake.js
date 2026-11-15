@@ -176,11 +176,11 @@ export class WakeSystem {
         // Kelvin arms: thin streaks aligned with the arm direction
         const armAng = heading - s * 0.34; // arms trail outward at the Kelvin angle
         this.add(st.bowX + rx * hb * s, st.bowZ + rz * hb * s, rx * s * spread, rz * s * spread, 16 + Math.random() * 6,
-          0.5 * vk * smoothstep(1.5, 6, V), ampK * (2.2 + V * 0.12), 0.3 + st.beam * 0.05, 0.03, armAng, 3.4);
+          0.2 * vk * smoothstep(1.5, 6, V), ampK * (2.2 + V * 0.12), 0.3 + st.beam * 0.05, 0.03, armAng, 3.4);
         // hull wash breaking off the chines (short-lived)
         const t = 0.45 + Math.random() * 0.45;
         const hx = st.bowX + (st.sternX - st.bowX) * t, hz = st.bowZ + (st.sternZ - st.bowZ) * t;
-        this.add(hx + rx * hb * s * 1.08, hz + rz * hb * s * 1.08, rx * s * spread * 0.5, rz * s * spread * 0.5, 4, 0.6 * vk, 0, 0.28 + st.beam * 0.05, 0.06, heading, 2.4);
+        this.add(hx + rx * hb * s * 1.08, hz + rz * hb * s * 1.08, rx * s * spread * 0.5, rz * s * spread * 0.5, 3, 0.5 * vk, 0, 0.28 + st.beam * 0.05, 0.06, heading, 2.4);
       }
       // prop wash: a narrow turbulent band directly astern, only under power
       if (powered) {

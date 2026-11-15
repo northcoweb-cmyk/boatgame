@@ -72,7 +72,7 @@ export class Passengers {
   update(dt, boat, hangout) {
     if (!boat || !this.guests.length) return;
     const t = boat.phys.t;
-    const lat = clamp(-t.latAccel / 8, -0.7, 0.7);
+    const lat = clamp(-t.latAccel / 16, -0.25, 0.25);
     const hard = Math.abs(t.latAccel) > 3.2;
     const wantWade = hangout && t.waterDepth < 1.3;
     for (const [i, g] of this.guests.entries()) {
@@ -84,7 +84,7 @@ export class Passengers {
         pos = new THREE.Vector3(side * (boat.def.beam * 0.5 + 1.3 + (i >> 1) * 0.9), -boat.com.y + boat.hull.keel - 0.1, seat.pos.z);
         face = side > 0 ? -Math.PI / 2 : Math.PI / 2;
       }
-      g.lean += (lat - g.lean) * Math.min(1, dt * 4);
+      g.lean += (lat - g.lean) * Math.min(1, dt * 1.5);
       if (g.hop > 0) {
         // hop-on animation from the dock into the seat
         g.hop -= dt;
@@ -97,7 +97,8 @@ export class Passengers {
       } else {
         g.obj.position.copy(pos);
       }
-      g.obj.rotation.set(0, face + Math.PI + Math.sin(this.game.time * 0.3 + i) * 0.15, g.kind === 'woman' ? g.lean * 0.18 : 0);
+      if (g.kind === 'man' && !wantWade && seat.pose === 'sit' && g.hop <= 0) g.obj.position.y -= 0.86;
+      g.obj.rotation.set(0, face + Math.PI + Math.sin(this.game.time * 0.3 + i) * 0.06, g.kind === 'woman' ? g.lean * 0.12 : 0);
       if (g.bounce) { g.bounce = Math.max(0, g.bounce - dt); g.obj.position.y += Math.sin(g.bounce * 20) * g.bounce * 0.06; }
       if (g.kind === 'man') {
         g.ch.pose = wantWade ? 'stand' : (seat.pose === 'sit' ? 'sit' : 'sitFloor');

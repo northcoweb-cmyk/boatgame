@@ -91,6 +91,9 @@ export class CameraRig {
       this.chasePos.addScaledVector(this.chaseVel, dt);
       if (this.chasePos.distanceTo(want) > d * 3 || this.snap) { this.chasePos.copy(want); this.chaseVel.set(0, 0, 0); this.snap = false; }
       pos.copy(this.chasePos);
+      // heave and pitch come through un-smoothed so every wave and slam is felt
+      pos.y += (boat.root.position.y - this.chasePos.y + h) * 0.85;
+      pos.y += Math.sin(boat.phys.t.trim) * d * 0.35;
       // stay above the water surface
       const wh = game.waves.heightFast(pos.x, pos.z, game.time) + 0.7;
       if (pos.y < wh) pos.y = wh;
@@ -98,7 +101,7 @@ export class CameraRig {
       if (Math.abs(lookX) < 1e-5) this.lookYaw = damp(this.lookYaw, 0, 0.8, dt);
       const tgt = this.target.copy(boat.root.position).addScaledVector(fwd, boat.def.length * 0.9).add(new THREE.Vector3(0, boat.def.chase.height * 0.45, 0));
       if (Math.abs(this.lookYaw) > 0.001) { pos.sub(tgt).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.lookYaw).add(tgt); }
-      _m.lookAt(pos, tgt, new THREE.Vector3(Math.sin(boat.phys.t.heel) * 0.25, 1, 0).normalize());
+      _m.lookAt(pos, tgt, new THREE.Vector3(-Math.sin(boat.phys.t.heel) * 0.45, 1, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(fwd.x, fwd.z)).normalize());
       quat.setFromRotationMatrix(_m);
       fov += clamp(sp / 18, 0, 1) * 6;
     } else if (this.mode === 'drone') {

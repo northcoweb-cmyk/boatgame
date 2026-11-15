@@ -7,10 +7,10 @@ import { heightAt, waveAttenuation } from '../world/geography.js';
 export const MAX_WAVES = 16;
 
 export const SEA_STATES = {
-  calm:      { label: 'Calm morning',   swell: 0.20, chop: 0.22, wind: 3.0 },
-  afternoon: { label: 'Afternoon chop', swell: 0.45, chop: 0.80, wind: 6.5 },
-  breeze:    { label: 'Breeze',         swell: 0.75, chop: 1.05, wind: 8.5 },
-  fresh:     { label: 'Fresh breeze',   swell: 1.00, chop: 1.45, wind: 11.0 },
+  calm:      { label: 'Calm morning',   swell: 0.3, chop: 0.35, wind: 3.5 },
+  afternoon: { label: 'Afternoon chop', swell: 0.6, chop: 1.05, wind: 7.5 },
+  breeze:    { label: 'Breeze',         swell: 0.9, chop: 1.35, wind: 9.5 },
+  fresh:     { label: 'Fresh breeze',   swell: 1.3, chop: 1.8, wind: 12.0 },
 };
 
 // Wavelengths (m) from long swell down to fine chop, plus fan offsets (rad).

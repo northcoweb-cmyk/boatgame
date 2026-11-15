@@ -105,6 +105,8 @@ export class BoatPhysics {
     this.thrusterInput = 0;
     this.buoyancyScale = 1;     // < 1 while the hull floods / sinks
     this.input = { throttle: 0, reverse: 0, steer: 0, thruster: 0 };
+    this.engineTrim = 0; // -1 tucked .. +1 trimmed out (power trim)
+    this._porp = 0;
 
     // telemetry
     this.t = {
@@ -147,7 +149,7 @@ export class BoatPhysics {
     const scale = (this.def.mass / RHO_WATER) / s;
     for (const p of this.probes) p.A = p.area * scale;
     this.totalArea = sa * scale;
-    this.heaveDamp = 0.62 * 2 * Math.sqrt(RHO_WATER * G * m / this.totalArea);
+    this.heaveDamp = 0.42 * 2 * Math.sqrt(RHO_WATER * G * m / this.totalArea);
   }
 
   reset(x, z, heading) {
@@ -210,8 +212,18 @@ export class BoatPhysics {
         _f.x += _ws.vx * pr.A * 140 * Math.min(1, sub / 0.2);
         _f.z += _ws.vz * pr.A * 140 * Math.min(1, sub / 0.2);
         b.addForceAtPoint(_f, _p);
-        // wave slam: bow probe re-entering fast
-        if (pr.bow && !pr.wasWet && relVy < -2.2) this.emit('slam', -relVy, 0, _p.x, _p.y, _p.z);
+        // hydrodynamic slamming: a hull hitting the water fast meets pressure
+        // ~ 1/2 rho Cs v^2 on top of buoyancy — the bow kicks up, speed bleeds
+        if (relVy < -1.0) {
+          const vs = -relVy - 0.6;
+          const slam = Math.min(0.5 * RHO_WATER * 1.6 * pr.A * vs * vs * (pr.bow ? 1.3 : 0.5) * Math.min(1, sub / 0.15), mass * G * 0.35);
+          _f.set(0, slam, 0);
+          b.addForceAtPoint(_f, _p);
+          _l.set(0, 0, 1); b.localDirToWorld(_l, _a);
+          b.force.addScaledVector(_a, slam * 0.035);
+        }
+        // wave slam event: bow probe re-entering fast
+        if (pr.bow && !pr.wasWet && relVy < -1.6) this.emit('slam', -relVy, 0, _p.x, _p.y, _p.z);
       }
       pr.wasWet = sub > 0.01;
       avgDepth += sub;
@@ -340,7 +352,11 @@ export class BoatPhysics {
     // ---------------------------------------------------------- hydrodynamics
     if (contact > 0) {
       // surge resistance with hump
-      const R = this.cd * V * V * (1 + this.humpAmp * this.humpShape(V)) + this.linDrag * V;
+      // power trim: trimmed out lifts the bow and frees the hull on plane
+      // (less wetted drag) but costs hole-shot; tucked digs the bow in
+      const et = this.engineTrim;
+      const trimDrag = 1 - 0.08 * et * plane + 0.04 * Math.max(0, -et) * plane;
+      const R = (this.cd * V * V * (1 + this.humpAmp * this.humpShape(V) * (1 + 0.3 * et)) + this.linDrag * V) * trimDrag;
       const rev = u < 0 ? 1.8 : 1;
       _l.set(0, 0, Math.sign(u) * R * rev * contact);
       // sway: quadratic + linear, reduced when planing (hull slides)
@@ -370,7 +386,12 @@ export class BoatPhysics {
       }
       // hump bow-rise & planing trim moment (about body X)
       const bell = gauss((V - h.vHump) / (0.6 * h.vHump));
-      const trimM = mass * G * d.length * (h.humpTrim * bell + h.planeTrim * plane) * Math.sign(u || 1) * contact;
+      let trimM = mass * G * d.length * (h.humpTrim * bell + h.planeTrim * plane + 0.011 * this.engineTrim * plane) * Math.sign(u || 1) * contact;
+      // over-trimmed at speed: porpoising (self-excited pitch oscillation)
+      const porp = smoothstep(0.55, 0.95, this.engineTrim) * smoothstep(0.75, 1, plane) * smoothstep(0.7, 1, V / h.vTop);
+      this._porp += dt * 2 * Math.PI * 1.3;
+      trimM += mass * G * d.length * 0.02 * porp * Math.sin(this._porp) * contact;
+      tel.porpoise = porp;
       // planing surfaces are self-righting: dynamic lift recentres heel
       const rollRight = -tel.heel * mass * G * d.beam * 0.9 * plane * contact;
       _l.set(trimM, 0, rollRight);

@@ -3,8 +3,9 @@
 export const KEY_ACTIONS = {
   KeyE: 'engine', Space: 'anchor', KeyH: 'horn', KeyF: 'dock', KeyC: 'camNext', KeyM: 'map', Escape: 'pause',
   KeyR: 'radioNext', Equal: 'mapZoomIn', NumpadAdd: 'mapZoomIn', Minus: 'mapZoomOut', NumpadSubtract: 'mapZoomOut',
-  KeyG: 'leaveHelm', Tab: 'inventory', KeyI: 'details', F1: 'help', Digit1: 'menu1', Digit2: 'menu2', Digit3: 'menu3', Digit4: 'menu4', Digit5: 'menu5', Digit6: 'menu6',
+  KeyG: 'leaveHelm', Tab: 'inventory', KeyI: 'details', KeyJ: 'jobs', Digit0: 'menu0', F1: 'help', Digit1: 'menu1', Digit2: 'menu2', Digit3: 'menu3', Digit4: 'menu4', Digit5: 'menu5', Digit6: 'menu6',
   Enter: 'confirm', KeyQ: 'reload', KeyP: 'invite', KeyO: 'hangout', KeyT: 'tow', KeyV: 'camPrev', ArrowUp: 'menuUp', ArrowDown: 'menuDown',
+  PageUp: 'trimUp', PageDown: 'trimDown', BracketRight: 'trimUp', BracketLeft: 'trimDown',
 };
 
 export class Keyboard {

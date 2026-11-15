@@ -1,9 +1,9 @@
 // Graphics presets + first-run auto-detection from the GPU.
 export const PRESETS = {
-  low: { renderScale: 0.9, grid: 160, waves: 10, reflections: true, reflScale: 0.3, shadows: false, shadowSize: 1024, msaa: 0, foliage: 0.5, palmNear: 110, drawDistance: 2600, terrain: 'low', traffic: 8, bloom: true, dpr: 1, terrainRes: 768 },
-  medium: { renderScale: 0.9, grid: 224, waves: 13, reflections: true, reflScale: 0.4, shadows: true, shadowSize: 1024, msaa: 2, foliage: 0.75, palmNear: 170, drawDistance: 3500, terrain: 'medium', traffic: 12, bloom: true, dpr: 1, terrainRes: 1024 },
-  high: { renderScale: 1.0, grid: 288, waves: 16, reflections: true, reflScale: 0.5, shadows: true, shadowSize: 2048, msaa: 4, foliage: 1.0, palmNear: 240, drawDistance: 4500, terrain: 'high', traffic: 16, bloom: true, dpr: 1.5, terrainRes: 1024 },
-  ultra: { renderScale: 1.0, grid: 384, waves: 16, reflections: true, reflScale: 0.6, shadows: true, shadowSize: 4096, msaa: 4, foliage: 1.3, palmNear: 330, drawDistance: 6000, terrain: 'ultra', traffic: 20, bloom: true, dpr: 1.5, terrainRes: 1024 },
+  low: { renderScale: 0.9, grid: 160, waves: 10, reflections: true, reflScale: 0.3, shadows: false, shadowSize: 1024, msaa: 0, foliage: 0.5, palmNear: 110, drawDistance: 2600, terrain: 'low', traffic: 16, bloom: true, dpr: 1, terrainRes: 768 },
+  medium: { renderScale: 0.9, grid: 224, waves: 13, reflections: true, reflScale: 0.4, shadows: true, shadowSize: 1024, msaa: 2, foliage: 0.75, palmNear: 170, drawDistance: 3500, terrain: 'medium', traffic: 24, bloom: true, dpr: 1, terrainRes: 1024 },
+  high: { renderScale: 1.0, grid: 288, waves: 16, reflections: true, reflScale: 0.5, shadows: true, shadowSize: 2048, msaa: 4, foliage: 1.0, palmNear: 240, drawDistance: 4500, terrain: 'high', traffic: 30, bloom: true, dpr: 1.5, terrainRes: 1024 },
+  ultra: { renderScale: 1.0, grid: 384, waves: 16, reflections: true, reflScale: 0.6, shadows: true, shadowSize: 4096, msaa: 4, foliage: 1.3, palmNear: 330, drawDistance: 6000, terrain: 'ultra', traffic: 38, bloom: true, dpr: 1.5, terrainRes: 1024 },
 };
 
 export function detectPreset(renderer) {

@@ -85,16 +85,20 @@ vec3 sandAlbedo(vec2 xz) {
   vec3 t2 = texture(uSandTex, xz * 0.053 + 0.37).rgb;
   vec3 tex = mix(t1, t2, 0.45);
   float lum = dot(tex, vec3(0.333));
-  vec3 base = vec3(0.93, 0.86, 0.72);
+  vec3 base = vec3(0.84, 0.76, 0.61);
   float n = bdNoise(xz * 0.02);
-  base = mix(base, vec3(0.97, 0.92, 0.80), n * 0.5);
-  return base * (0.42 + 0.5 * lum);
+  base = mix(base, vec3(0.90, 0.84, 0.70), n * 0.5);
+  return base * (0.4 + 0.45 * lum);
 }
 vec3 seabedColor(vec2 xz, float h, float grass) {
   vec3 sand = sandAlbedo(xz);
   vec3 grassCol = mix(vec3(0.20, 0.27, 0.12), vec3(0.32, 0.36, 0.18), bdNoise(xz * 0.3));
-  float g = grass * smoothstep(-0.8, -2.0, h);
-  vec3 c = mix(sand, grassCol, g * (0.65 + 0.35 * bdNoise(xz * 1.3)));
+  // Biscayne flats: turtle-grass meadows with pale sand blowouts; bare sand
+  // only on the sandbars / beaches (shallower than ~0.7 m) and in channels
+  float meadow = smoothstep(0.38, 0.58, bdFbm(xz * 0.012) * 0.7 + bdNoise(xz * 0.07) * 0.3);
+  float g = max(grass, meadow) * smoothstep(-0.7, -1.6, h) * smoothstep(-7.5, -4.5, h);
+  // submerged sand is wet: darker and a touch greener (algae film)
+  vec3 c = mix(sand * vec3(0.62, 0.66, 0.6), grassCol * (0.75 + 0.35 * bdNoise(xz * 2.7)), g * (0.7 + 0.3 * bdNoise(xz * 1.3)));
   // channels: darker muddy sand
   c = mix(c, c * vec3(0.55, 0.58, 0.6), smoothstep(-5.5, -8.0, h));
   return c;

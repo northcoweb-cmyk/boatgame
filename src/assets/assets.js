@@ -344,11 +344,26 @@ export function bakeToVertexColor(root, { filter = null, tint = null } = {}) {
 // Depth-only waterline cap for instanced boats (hides water inside open hulls).
 // Shares the instance matrices of the boat mesh it is paired with.
 export function addHullMask(im, height = 0.62) {
-  const bb = im.geometry.boundingBox || (im.geometry.computeBoundingBox(), im.geometry.boundingBox);
-  const hw = (bb.max.x - bb.min.x) * 0.45, z0 = bb.min.z + 0.15, L = bb.max.z - bb.min.z - 0.3;
+  const geo0 = im.geometry;
+  const bb = geo0.boundingBox || (geo0.computeBoundingBox(), geo0.boundingBox);
+  // hull footprint from the geometry itself: per length slice, the half-beam
+  // of the vertices in the lower hull band (ignores T-tops, rails, outboards)
+  const pos = geo0.attributes.position, N = 24;
+  const yTop = bb.min.y + Math.min(height + 0.35, (bb.max.y - bb.min.y) * 0.45);
+  const half = new Float32Array(N), L = bb.max.z - bb.min.z;
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i); if (y > yTop) continue;
+    const k = Math.min(N - 1, Math.max(0, Math.floor(((pos.getZ(i) - bb.min.z) / L) * N)));
+    half[k] = Math.max(half[k], Math.abs(pos.getX(i)));
+  }
+  let first = 0, last = N - 1;
+  while (first < N && half[first] < 0.05) first++;
+  while (last > 0 && half[last] < 0.05) last--;
   const pts = [];
-  for (let i = 0; i <= 12; i++) { const t = i / 12; const w = t < 0.35 ? Math.sin((t / 0.35) * Math.PI / 2) : 1; pts.push(new THREE.Vector2(-hw * w, z0 + t * L)); }
-  for (let i = 12; i >= 0; i--) { const t = i / 12; const w = t < 0.35 ? Math.sin((t / 0.35) * Math.PI / 2) : 1; pts.push(new THREE.Vector2(hw * w, z0 + t * L)); }
+  const zAt = (k) => bb.min.z + ((k + 0.5) / N) * L;
+  for (let k = first; k <= last; k++) pts.push(new THREE.Vector2(-half[k] * 0.86, zAt(k)));
+  for (let k = last; k >= first; k--) pts.push(new THREE.Vector2(half[k] * 0.86, zAt(k)));
+  if (pts.length < 6) { const hw = (bb.max.x - bb.min.x) * 0.4; pts.length = 0; pts.push(new THREE.Vector2(-hw, bb.min.z + 0.4), new THREE.Vector2(-hw, bb.max.z - 0.4), new THREE.Vector2(hw, bb.max.z - 0.4), new THREE.Vector2(hw, bb.min.z + 0.4)); }
   const geo = new THREE.ShapeGeometry(new THREE.Shape(pts));
   geo.rotateX(Math.PI / 2);
   geo.translate(0, height, 0);

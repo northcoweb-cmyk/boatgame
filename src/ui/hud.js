@@ -78,6 +78,7 @@ export class HUD {
       $('hud-speed').textContent = Math.round(v);
       $('hud-unit').textContent = unit === 'mph' ? 'mph' : unit === 'kmh' ? 'km/h' : 'kn';
       $('hud-rpm').textContent = b.phys.engineOn ? Math.round(t.rpm / 10) * 10 : 'off';
+      { const et = b.phys.engineTrim || 0; const tt = et > 0.05 ? `▲${Math.round(et * 10)}` : et < -0.05 ? `▼${Math.round(-et * 10)}` : '0'; if (tt !== this._tt) { this._tt = tt; $('hud-ptrim').textContent = tt; $('hud-ptrim').style.color = b.phys.t.porpoise > 0.3 ? '#ffb36b' : ''; } }
       $('hud-gear').textContent = !b.phys.engineOn ? '—' : b.phys.gear > 0 ? 'F' : b.phys.gear < 0 ? 'R' : 'N';
       const depth = t.waterDepth;
       const du = s.depthUnits === 'ft' ? 3.281 : 1;
@@ -134,8 +135,8 @@ export class HUD {
     if (this.controlsOn) {
       const I = g.input;
       const rows = atHelm
-        ? [['throttle', 'Throttle'], ['reverse', 'Reverse'], ['steer', 'Steer'], ['engine', b.phys.engineOn ? 'Engine (hold: stop)' : 'Start engine'], ['anchor', 'Anchor'], ['dock', 'Docking mode'], ['camNext', 'Camera'], ['leaveHelm', 'Leave helm'], ['map', 'Chart'], ['horn', 'Horn']]
-        : [['steer', 'Walk'], ['interact', 'Interact / board'], ['inventory', 'Inventory'], ['camNext', 'Camera'], ['map', 'Chart']];
+        ? [['throttle', 'Throttle'], ['reverse', 'Reverse'], ['steer', 'Steer'], ['engine', b.phys.engineOn ? 'Engine (hold: stop)' : 'Start engine'], ['anchor', 'Anchor'], ['dock', 'Docking mode'], ['camNext', 'Camera'], ['leaveHelm', 'Leave helm'], ['map', 'Chart'], ['horn', 'Horn'], ['trimUp', 'Trim up'], ['trimDown', 'Trim down'], ['jobs', 'Jobs board']]
+        : [['steer', 'Walk'], ['interact', 'Interact / board'], ['inventory', 'Inventory'], ['camNext', 'Camera'], ['map', 'Chart'], ['jobs', 'Jobs board']];
       if (b && b.def.thruster && atHelm) rows.splice(3, 0, ['thruster', 'Bow thruster']);
       const key = I.device + rows.map((r) => r[1]).join();
       if (key !== this._ctlKey) { this._ctlKey = key; $('hud-controls').innerHTML = rows.map(([a, l]) => `<div><kbd>${I.hint(a)}</kbd>${l}</div>`).join(''); }

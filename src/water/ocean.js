@@ -132,8 +132,8 @@ void main() {
   vec3 refl = skyGrad(R);
   if (uReflectOn > 0.5) {
     vec4 rc = vReflCoord;
-    float distortion = 1.7 / (1.0 + dist * 0.012);
-    rc.xy += N.xz * distortion * rc.w * 0.6;
+    // coherent, wave-rippled mirror image (strong offsets scramble hulls)
+    rc.xy += N.xz * rc.w * 0.13 / (1.0 + dist * 0.006);
     vec3 rtex = textureProj(uReflection, rc).rgb;
     refl = mix(rtex, refl, 0.3); // rough water averages part of the mirror image into sky colour
   } else {
@@ -150,7 +150,7 @@ void main() {
   vec3 bed = seabedColor(bedXZ, bedH, tb.b);
   float sunAmt = max(L.y, 0.0) * uSunVisible;
   float caus = caustics(bedXZ, uTime) * smoothstep(7.0, 0.3, column);
-  vec3 bedLit = bed * 0.8 * (uSunColor * sunAmt * (0.6 + caus * 0.7) + uAmbient * 0.8);
+  vec3 bedLit = bed * 0.7 * (uSunColor * sunAmt * (0.6 + caus * 0.7) + uAmbient * 0.8);
   float path = column * (1.0 + 1.0 / max(-Rr.y, 0.3));
   vec3 absorb = vec3(0.46, 0.125, 0.085);
   vec3 T = exp(-absorb * path);
@@ -182,19 +182,25 @@ void main() {
   float capThresh = mix(0.25, 0.7, uWhitecaps);
   float caps = smoothstep(capThresh, capThresh - 0.3, jac) * smoothstep(0.35, 0.7, n1 + n2 * 0.3) * uWhitecaps;
   caps += smoothstep(capThresh + 0.15, capThresh - 0.1, jac) * smoothstep(0.62, 0.8, n1) * 0.35 * uWhitecaps; // fading trail
-  // (b) shoreline lapping band + breaking foam at sandbar edges
-  float shore = (1.0 - smoothstep(0.0, 0.85, dcol)) * (0.55 + 0.45 * sin(dcol * 9.0 - uTime * 1.7 + n1 * 6.0));
-  shore *= smoothstep(0.3, 0.6, n2 + 0.3);
-  float breakZone = smoothstep(2.2, 1.0, dcol) * smoothstep(0.25, 0.7, dcol);
-  float breaking = breakZone * smoothstep(0.25, 0.75, vCrest) * smoothstep(0.35, 0.65, n1) * (0.3 + uWhitecaps);
-  // (c) boat wakes
-  // streaky, noise-broken wake foam: dense turbulence at the stern, lace as it ages
-  float lace = bdNoise(vWorld.xz * 2.3 + uTime * 0.2) * 0.6 + bdNoise(vWorld.xz * 6.1 - uTime * 0.35) * 0.4;
-  float wf = smoothstep(0.12, 0.6, wakeFoam * (0.6 + lace * 0.8)) * 0.85;
-  float foam = clamp(caps + shore * 0.85 + breaking + wf, 0.0, 1.0);
+  // (b) a thin lapping line right at the waterline (not across the flats) +
+  //     breaking only where the bottom shoals steeply under a real crest
+  float shore = (1.0 - smoothstep(0.0, 0.32, dcol)) * (0.5 + 0.5 * sin(dcol * 14.0 - uTime * 1.7 + n1 * 6.0));
+  shore *= smoothstep(0.35, 0.65, n2 + 0.25) * smoothstep(0.0, 0.05, dcol);
+  float shoal = clamp(length(vec2(dFdx(dcol), dFdy(dcol))) / max(footprint, 0.05), 0.0, 1.0);
+  float breakZone = smoothstep(1.2, 0.55, dcol) * smoothstep(0.2, 0.45, dcol) * smoothstep(0.08, 0.3, shoal);
+  float breaking = breakZone * smoothstep(0.5, 0.9, vCrest) * smoothstep(0.45, 0.7, n1) * (0.15 + uWhitecaps * 0.6);
+  // (c) boat wakes: foam coverage thresholds a two-scale lace noise, so fresh
+  //     wake is dense churn and ageing wake breaks into patches and threads
+  //     over a band of brighter, aerated turquoise water (no solid white)
+  float lace = bdNoise(vWorld.xz * 3.1 + uTime * 0.15) * 0.45 + bdNoise(vWorld.xz * 8.7 - uTime * 0.3) * 0.33 + bdNoise(vWorld.xz * 21.0 + uTime * 0.1) * 0.22;
+  float cover = clamp(wakeFoam, 0.0, 1.0);
+  float wf = smoothstep(1.02 - cover, 1.3 - cover, lace) * smoothstep(0.03, 0.25, cover) * (0.45 + 0.4 * cover);
+  float aerated = smoothstep(0.02, 0.5, cover) * (1.0 - wf);
+  float foam = clamp(caps + shore * 0.7 + breaking + wf, 0.0, 1.0);
   vec3 foamCol = vec3(0.92, 0.95, 0.96) * (uSunColor * (0.35 + 0.65 * max(N.y, 0.0)) * sunAmt + uAmbient * 1.3);
 
   col = mix(body, refl, F) + spec + sss;
+  col = mix(col, col * 0.6 + vec3(0.30, 0.62, 0.62) * (uSunColor * sunAmt * 0.5 + uAmbient), aerated * 0.45);
   col = mix(col, foamCol, foam * 0.92);
   col = applyHaze(col, vWorld);
   gl_FragColor = vec4(col, shoreAlpha);

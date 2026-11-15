@@ -153,7 +153,7 @@ ${SEABED_GLSL}
   vec3 col;
   if (h < 0.0) {
     col = seabedColor(xz, h, td.b);
-    col += vec3(0.9, 1.0, 1.0) * caustics(xz, uTime) * 0.35 * smoothstep(-6.0, -0.2, h);
+    col += vec3(0.9, 1.0, 1.0) * caustics(xz, uTime) * 0.12 * smoothstep(-6.0, -0.2, h);
   } else {
     float n = bdFbm(xz * 0.05);
     vec3 grass = mix(vec3(0.24, 0.36, 0.12), vec3(0.36, 0.45, 0.17), n);

@@ -46,7 +46,7 @@ export const BOATS = {
     length: 11.6, beam: 3.9, keelBelowCom: 1.15, deckAboveCom: 0.9,
     mass: 14000, draft: 0.95, deadrise: 19 * DEG, comFromStern: 0.43,
     engine: { type: 'inboard', idleRpm: 600, maxRpm: 2400, spoolUp: 2.0, spoolDown: 1.1, maxThrust: 41000, revFactor: 0.62, shiftDelay: 0.6, sound: 'diesel', hp: 880 },
-    hull: { vTop: 28 * KNOT, vHump: 10 * KNOT, planeMargin: 0.13, swayCd: 1.25, yawDamp: 1.15, liftFrac: 0.5, humpTrim: 0.075, planeTrim: 0.02, stability: 1.0 },
+    hull: { vTop: 28 * KNOT, vHump: 10 * KNOT, planeMargin: 0.22, swayCd: 1.25, yawDamp: 1.15, liftFrac: 0.5, humpTrim: 0.075, planeTrim: 0.02, stability: 1.0 },
     rudder: { maxAngle: 35 * DEG, minAngleAtSpeed: 20 * DEG, washGain: 0.5, speedGain: 0.14, falloff: 6.5, rate: 110 * DEG, rateAtSpeed: 60 * DEG },
     windage: { side: 26, front: 11, height: 2.1, lead: 0.2 },
     propWalk: 0.13, thruster: 6200, propDepth: 1.05, beachable: false, hornType: 'yacht',
