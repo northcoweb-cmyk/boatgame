@@ -195,6 +195,22 @@ export class WakeSystem {
         this.add(st.sternX + rx * s * st.beam * 0.55, st.sternZ + rz * s * st.beam * 0.55, rx * s, rz * s, 8, 0.5 * clamp01(Math.abs(st.yawRate)), 0.04 * sizeK, st.beam * 0.22, 0.08, heading, 1.6);
       }
     }
+    // hull/water contact: a thin broken collar of foam along the waterline,
+    // a curling bow wave that grows with speed, gentle lapping when idle
+    {
+      const n = Math.min(10, 2 + V * 0.8) * dt * 30;
+      for (let k = 0; k < n; k++) {
+        const t = Math.random();                    // 0 bow .. 1 stern
+        const s = Math.random() < 0.5 ? -1 : 1;
+        const w = t < 0.3 ? Math.sin((t / 0.3) * Math.PI / 2) : 1;
+        const hb = st.beam * 0.5 * w + 0.15;
+        const x = st.bowX + (st.sternX - st.bowX) * t + rx * s * hb;
+        const z = st.bowZ + (st.sternZ - st.bowZ) * t + rz * s * hb;
+        const bow = 1 - smoothstep(0, 0.35, t);
+        const f = 0.18 + 0.55 * vk * (0.5 + bow);
+        this.add(x, z, rx * s * (0.3 + V * 0.12 * bow), rz * s * (0.3 + V * 0.12 * bow), 0.8 + vk * 1.4, f, bow * 0.03 * vk, 0.22 + 0.25 * vk, 0.25, heading, 1.8);
+      }
+    }
     // idle / reverse prop churn at low speed (engine in gear only)
     if (V < 0.8 && powered && Math.random() < dt * 12) {
       this.add(st.sternX + (Math.random() - 0.5) * 0.6, st.sternZ + (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6, 4, 0.4 * st.throttle, 0, st.beam * 0.18, 0.15, Math.random() * 6.28, 1.3);

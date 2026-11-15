@@ -60,7 +60,8 @@ export class Boat {
     const halfB = h.beam / 2;
     const slotPoint = (u, v, high) => {
       const z = h.bow + u * h.length, x = v * halfB * 0.9;
-      const p = deckPoint(this.model, x, z, high ? h.gunwale + 0.15 : h.gunwale + 0.35, h.keel + H * 0.55);
+      // standing helm: cast from below leaning posts / T-tops so we land on the deck floor
+      const p = deckPoint(this.model, x, z, high ? h.keel + H * 0.75 : h.gunwale + 0.35, h.keel + H * 0.55);
       return p.sub(this.com);
     };
     this.helmPos = slotPoint(d.helm.u, d.helm.v, d.helm.pose === 'stand');

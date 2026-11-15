@@ -210,18 +210,18 @@ export class Player {
     ch.update(dt, { steer: -boat.phys.rudder / boat.def.rudder.maxAngle, lean: clamp(-boat.phys.t.latAccel / 9, -0.6, 0.6) });
     const helmCam = game.cams.mode === 'helm';
     ch.object.visible = !helmCam;
-    // first-person forearms reaching to the wheel rim
+    // first-person forearms: from just below/beside the camera to grips on the wheel rim
     this.fpArms.visible = helmCam;
     if (helmCam) {
       boat.wheel.updateMatrixWorld();
+      const cam = game.camera;
       const rimR = boat.def.model === 'yacht' ? 0.24 : 0.19;
-      const shoulderY = boat.def.helm.eyeHeight - (boat.def.helm.pose === 'sit' ? 0.4 : 0) - 0.32;
       for (const [arm, side] of [[this.armL, -1], [this.armR, 1]]) {
-        const a = side * 1.15 + boat.wheel.rotation.z;
-        const grip = _v.set(Math.cos(a) * rimR * side * -1 * -1, Math.sin(Math.abs(a)) * rimR * 0.4, 0);
-        grip.set(-Math.sin(a) * rimR, Math.cos(a) * rimR * 0.2, 0).applyMatrix4(boat.wheel.matrixWorld);
-        const sh = _v2.copy(boat.helmPos).add(new THREE.Vector3(side * 0.2, shoulderY, 0.15)).applyMatrix4(boat.root.matrixWorld);
-        arm.position.copy(sh).lerp(grip, 0.55);
+        const grip = _v.set(side * rimR * 0.87, rimR * 0.5, 0).applyMatrix4(boat.wheel.matrixWorld);
+        const sh = _v2.set(side * 0.2, -0.42, 0.05).applyMatrix4(cam.matrixWorld);
+        const len = grip.distanceTo(sh);
+        arm.scale.set(1, len / 0.46, 1);
+        arm.position.copy(sh).lerp(grip, 0.5);
         arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), grip.clone().sub(sh).normalize());
       }
     }

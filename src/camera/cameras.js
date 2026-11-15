@@ -64,11 +64,12 @@ export class CameraRig {
     if (this.mode === 'helm' && boat) {
       const r = boat.root;
       r.updateMatrixWorld();
-      const eye = _v2.copy(boat.helmPos).add(new THREE.Vector3(0, boat.def.helm.eyeHeight - (boat.def.helm.pose === 'sit' ? 0.4 : 0) , 0.1));
+      // eye sits behind and above the helm wheel, so the wheel and dash are in view
+      const eye = _v2.copy(boat.wheel.position).add(new THREE.Vector3(0, (boat.def.helm.eyeAbove ?? 0.4) + (boat.def.helm.pose === 'stand' ? 0.05 : 0), boat.def.helm.back + 0.42));
       pos.copy(eye).applyMatrix4(r.matrixWorld);
       this.lookYaw = clamp(this.lookYaw - lookX, -2.6, 2.6);
       this.lookPitch = clamp(this.lookPitch - lookY, -0.9, 0.7);
-      if (Math.abs(lookX) + Math.abs(lookY) < 1e-5) { this.lookYaw = damp(this.lookYaw, 0, 0.4, dt); this.lookPitch = damp(this.lookPitch, -0.04, 0.4, dt); }
+      if (Math.abs(lookX) + Math.abs(lookY) < 1e-5) { this.lookYaw = damp(this.lookYaw, 0, 0.4, dt); this.lookPitch = damp(this.lookPitch, -0.1, 0.4, dt); }
       _e.set(this.lookPitch, this.lookYaw, 0, 'YXZ');
       quat.copy(r.quaternion).multiply(new THREE.Quaternion().setFromEuler(_e));
       const sp = boat.phys.t.speed;

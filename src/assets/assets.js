@@ -74,8 +74,41 @@ export class Assets {
     return tex;
   }
 
+  // Skinned meshes (e.g. the bass boat's cubby-lid rig) are baked to static
+  // geometry in their bind pose so measuring, raycasting and baking all see
+  // real vertex positions.
+  bakeSkinned(root) {
+    const list = [];
+    root.traverse((o) => { if (o.isSkinnedMesh) list.push(o); });
+    const v = new THREE.Vector3();
+    for (const sm of list) {
+      sm.skeleton.update();
+      const src = sm.geometry;
+      const g = src.clone();
+      for (const k of ['skinIndex', 'skinWeight']) g.deleteAttribute(k);
+      toFloatAttrs(g, ['position', 'normal']);
+      const pos = g.attributes.position;
+      const srcPos = src.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(srcPos, i);
+        sm.applyBoneTransform(i, v);
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      g.computeVertexNormals();
+      g.computeBoundingBox(); g.computeBoundingSphere();
+      const m = new THREE.Mesh(g, sm.material);
+      m.name = sm.name;
+      // applyBoneTransform returns positions in the mesh's local space
+      m.position.copy(sm.position); m.quaternion.copy(sm.quaternion); m.scale.copy(sm.scale);
+      sm.parent.add(m);
+      sm.parent.remove(sm);
+    }
+  }
+
   normalise(gltf, spec, name) {
     const root = gltf.scene;
+    root.updateMatrixWorld(true);
+    this.bakeSkinned(root);
     root.updateMatrixWorld(true);
     const inner = new THREE.Group();
     inner.add(root);
