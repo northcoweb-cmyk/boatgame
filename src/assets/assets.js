@@ -349,20 +349,24 @@ export function addHullMask(im, height = 0.62) {
   // hull footprint from the geometry itself: per length slice, the half-beam
   // of the vertices in the lower hull band (ignores T-tops, rails, outboards)
   const pos = geo0.attributes.position, N = 24;
-  const yTop = bb.min.y + Math.min(height + 0.35, (bb.max.y - bb.min.y) * 0.45);
+  // cross-section of the hull at the mask height (plus a little below)
+  const yLo = height - 0.45, yHi = height + 0.12;
   const half = new Float32Array(N), L = bb.max.z - bb.min.z;
   for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i); if (y > yTop) continue;
+    const y = pos.getY(i); if (y > yHi || y < yLo) continue;
     const k = Math.min(N - 1, Math.max(0, Math.floor(((pos.getZ(i) - bb.min.z) / L) * N)));
     half[k] = Math.max(half[k], Math.abs(pos.getX(i)));
   }
+  // drop narrow appendages at the ends (outboard legs, bow pulpits)
+  let mx = 0; for (let k = 0; k < N; k++) mx = Math.max(mx, half[k]);
   let first = 0, last = N - 1;
-  while (first < N && half[first] < 0.05) first++;
-  while (last > 0 && half[last] < 0.05) last--;
+  while (first < N && half[first] < mx * 0.3) first++;
+  while (last > 0 && half[last] < mx * 0.45) last--;
+  for (let k = first; k <= last; k++) half[k] = Math.min(half[k], k > 0 ? Math.max(half[k - 1], mx * 0.3) * 1.6 : half[k]);
   const pts = [];
   const zAt = (k) => bb.min.z + ((k + 0.5) / N) * L;
-  for (let k = first; k <= last; k++) pts.push(new THREE.Vector2(-half[k] * 0.86, zAt(k)));
-  for (let k = last; k >= first; k--) pts.push(new THREE.Vector2(half[k] * 0.86, zAt(k)));
+  for (let k = first; k <= last; k++) pts.push(new THREE.Vector2(-half[k] * 0.8, zAt(k)));
+  for (let k = last; k >= first; k--) pts.push(new THREE.Vector2(half[k] * 0.8, zAt(k)));
   if (pts.length < 6) { const hw = (bb.max.x - bb.min.x) * 0.4; pts.length = 0; pts.push(new THREE.Vector2(-hw, bb.min.z + 0.4), new THREE.Vector2(-hw, bb.max.z - 0.4), new THREE.Vector2(hw, bb.max.z - 0.4), new THREE.Vector2(hw, bb.min.z + 0.4)); }
   const geo = new THREE.ShapeGeometry(new THREE.Shape(pts));
   geo.rotateX(Math.PI / 2);

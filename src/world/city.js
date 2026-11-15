@@ -143,6 +143,7 @@ export function buildCity(game) {
     t.meshes.push(o); t.box.union(bb);
   });
   towers.sort((a, b) => a.cx - b.cx);
+  const coreMat = facadeMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.1, envMapIntensity: 1.4 }));
   const heroCount = { low: 5, medium: 10, high: 14, ultra: 14 }[game.quality.preset] ?? 14;
   const sites = game.data.heroTowers;
   for (let i = 0; i < Math.min(heroCount, sites.length, towers.length); i++) {
@@ -154,12 +155,23 @@ export function buildCity(game) {
       c.position.x -= (tw.box.min.x + tw.box.max.x) / 2;
       c.position.z -= (tw.box.min.z + tw.box.max.z) / 2;
       c.material = m.material.clone();
-      c.material.transparent = false; c.material.opacity = 1; c.material.alphaTest = 0; c.material.alphaMap = null; c.material.depthWrite = true; c.material.side = THREE.FrontSide;
+      c.material.transparent = false; c.material.opacity = 1; c.material.alphaTest = 0; c.material.alphaMap = null; c.material.depthWrite = true; c.material.side = THREE.DoubleSide;
       if ('transmission' in c.material) c.material.transmission = 0;
       if (/glass|window|mirror/i.test(c.material.name) || (c.material.map === null && c.material.metalness > 0.3)) { c.material.color.setRGB(0.5, 0.66, 0.76); c.material.roughness = 0.12; c.material.metalness = 0.35; c.material.transparent = false; c.material.opacity = 1; c.material.depthWrite = true; }
       else { c.material.color.setRGB(0.95, 0.95, 0.93); c.material.roughness = 0.6; }
       c.castShadow = false; c.receiveShadow = true;
       tg.add(c);
+    }
+    // opaque glass core inside the frame: no tower can ever read see-through
+    {
+      const bw = tw.box.max.x - tw.box.min.x, bd = tw.box.max.z - tw.box.min.z, bh = tw.box.max.y - tw.box.min.y;
+      const cg = new THREE.BoxGeometry(bw * 0.84, bh * 0.985, bd * 0.84).toNonIndexed();
+      const n = cg.attributes.position.count, col = new Float32Array(n * 4), bld = new Float32Array(n * 2);
+      for (let k = 0; k < n; k++) { col.set([0.55, 0.62, 0.66, 0.2 + i * 0.05], k * 4); bld.set([site.h + 2, 0.95], k * 2); }
+      cg.setAttribute('color', new THREE.BufferAttribute(col, 4)); cg.setAttribute('aBld', new THREE.BufferAttribute(bld, 2)); cg.deleteAttribute('uv');
+      const core = new THREE.Mesh(cg, coreMat);
+      core.position.set(0, tw.box.min.y + bh * 0.4925, 0);
+      tg.add(core);
     }
     const s = site.h / (tw.box.max.y - tw.box.min.y);
     tg.scale.setScalar(s);
@@ -174,7 +186,7 @@ export function buildCity(game) {
   const viz = A.cloneModel('vizcayne', { cloneMaterials: false });
   viz.position.set(-2450, heightAt(-2450, -540) - 0.3, -540);
   viz.rotation.y = Math.PI * 0.5;
-  viz.traverse((o) => { if (o.isMesh) { o.castShadow = false; } });
+  viz.traverse((o) => { if (o.isMesh) { o.castShadow = false; for (const m of [].concat(o.material)) { m.color.setRGB(0.62, 0.72, 0.8); m.metalness = 0.45; m.roughness = 0.22; m.envMapIntensity = 1.2; } } });
   group.add(viz);
   tops.push(new THREE.Vector3(-2450, 149, -540));
 
@@ -213,6 +225,22 @@ export function buildCity(game) {
   group.add(av);
   game.aviationLights = av;
 
+  // no see-through towers: every glazed material in the skyline is an opaque,
+  // tinted, sky-reflecting curtain wall (alpha-blended glass reads as a ghost)
+  const fixed = new Set();
+  group.traverse((o) => {
+    if (!o.isMesh || o.isInstancedMesh && !o.material) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!m || fixed.has(m) || !m.isMeshStandardMaterial) continue;
+      fixed.add(m);
+      const glassy = m.transparent || m.opacity < 1 || (m.transmission || 0) > 0 || /glass|window|vidro|cristal/i.test(m.name);
+      if (!glassy) continue;
+      m.transparent = false; m.opacity = 1; m.depthWrite = true; m.alphaTest = 0; m.alphaMap = null;
+      if ('transmission' in m) m.transmission = 0;
+      m.color.setRGB(0.22, 0.34, 0.42); m.metalness = 0.75; m.roughness = 0.08; m.envMapIntensity = 1.4;
+      m.side = THREE.DoubleSide; m.needsUpdate = true;
+    }
+  });
   game.scene.add(group);
   return group;
 }
