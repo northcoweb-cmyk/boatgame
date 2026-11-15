@@ -47,11 +47,15 @@ ${NOISE_GLSL}`)
   vec2 cell = vec2(floor(fx), floor(fy));
   vec2 f = vec2(fract(fx), fract(fy));
   float glass = vBld.y;
-  float ww = mix(0.62, 0.92, glass), wh = mix(0.52, 0.86, glass);
+  float ww = mix(0.52, 0.86, glass), wh = mix(0.42, 0.74, glass);
   float win = step(abs(f.x - 0.5), ww * 0.5) * step(abs(f.y - 0.55), wh * 0.5) * wall * step(4.0, vFWorld.y) * step(vFWorld.y, vBld.x - 2.0);
   float r = bdHash(cell + vec2(vHash * 97.0, floor(vHash * 1000.0)));
   // daytime glass: dark blue-grey, sky-reflective
-  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.16, 0.22, 0.28), vec3(0.32, 0.42, 0.5), r * 0.6 + glass * 0.3), win * (0.85 - glass * 0.2));
+  // dark glazing, white balcony slab at each floor line, warm stucco walls
+  diffuseColor.rgb *= vec3(1.0, 0.97, 0.92);
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(vec3(0.045, 0.07, 0.10), vec3(0.10, 0.17, 0.24), r * 0.7 + glass * 0.3), win * 0.92);
+  float slab = step(0.9, f.y) * wall * step(4.0, vFWorld.y);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.92, 0.9), slab * 0.85);
   // lit windows at night: warm & cool interiors, some dark
   float lit = step(1.0 - (0.18 + 0.5 * uNight), r) * win;
   vec3 warm = mix(vec3(1.0, 0.72, 0.42), vec3(0.75, 0.85, 1.0), step(0.78, bdHash(cell * 1.7 + vHash)));

@@ -29,7 +29,8 @@ void main() {
   vec2 wuv = (p - uWakeRect.xy) / uWakeRect.z;
   float wakeH = 0.0;
   if (wuv.x > 0.0 && wuv.y > 0.0 && wuv.x < 1.0 && wuv.y < 1.0) wakeH = textureLod(uWake, wuv, 0.0).g * smoothstep(0.0, 0.08, min(min(wuv.x, wuv.y), min(1.0 - wuv.x, 1.0 - wuv.y)));
-  vec3 w = vec3(p.x + d.x, d.y + wakeH, p.y + d.z);
+  // wake height shapes shading normals + buoyancy only: displacing the coarse grid by a fine texture makes ridges
+  vec3 w = vec3(p.x + d.x, d.y + wakeH * 0.0, p.y + d.z);
   vWorld = w;
   vParam = p;
   vAtten = atten;
@@ -94,7 +95,7 @@ void main() {
     float hz = texture(uWake, wuv + vec2(0.0, px.y)).g - texture(uWake, wuv - vec2(0.0, px.y)).g;
     float edge = smoothstep(0.0, 0.06, min(min(wuv.x, wuv.y), min(1.0 - wuv.x, 1.0 - wuv.y)));
     float texel = uWakeRect.z / 1024.0;
-    N = normalize(N + vec3(-hx, 0.0, -hz) / (2.0 * texel) * 0.8 * edge);
+    N = normalize(N + clamp(vec3(-hx, 0.0, -hz) / (2.0 * texel), -0.6, 0.6) * 0.5 * edge);
     wakeFoam = wk.a * edge;
   }
 

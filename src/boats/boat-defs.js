@@ -57,7 +57,7 @@ export const BOATS = {
       { u: 0.72, v: 0.45, pose: 'sit', face: Math.PI / 2 }, { u: 0.86, v: 0.0, pose: 'sit', face: Math.PI },
       { u: 0.22, v: -0.2, pose: 'sitFloor', face: 0 }, { u: 0.22, v: 0.2, pose: 'sitFloor', face: 0 },
     ],
-    chase: { dist: 16, height: 4.4 },
+    chase: { dist: 12.5, height: 3.7 },
   },
   marsh: {
     id: 'marsh', name: 'Marsh', kind: '13 ft inflatable RIB', model: 'rib',

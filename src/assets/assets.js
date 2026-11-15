@@ -144,6 +144,19 @@ export class Assets {
   }
 }
 
+// Quantized (meshopt) attributes must become floats BEFORE any matrix is applied.
+export function toFloatAttrs(g, keys) {
+  for (const k of keys) {
+    const a = g.attributes[k];
+    if (!a) continue;
+    if (a.normalized || !(a.array instanceof Float32Array)) {
+      const f = new Float32Array(a.count * a.itemSize);
+      for (let i = 0; i < a.count; i++) for (let j = 0; j < a.itemSize; j++) f[i * a.itemSize + j] = a.getComponent(i, j);
+      g.setAttribute(k, new THREE.BufferAttribute(f, a.itemSize));
+    }
+  }
+}
+
 // Bake a model hierarchy into one geometry per material (model-space), so
 // many copies can be drawn as InstancedMeshes with a handful of draw calls.
 // Untextured opaque materials are collapsed into a single vertex-coloured one.
@@ -171,6 +184,7 @@ export function bakeModel(root, { mergeUntextured = true, filter = null } = {}) 
         }
         g = sub;
       }
+      toFloatAttrs(g, ['position', 'normal', 'uv']);
       g.applyMatrix4(o.matrixWorld);
       // normalise attribute set
       for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv', 'color'].includes(k)) g.deleteAttribute(k);
@@ -267,6 +281,7 @@ export function bakeToVertexColor(root, { filter = null, tint = null } = {}) {
     const m = Array.isArray(o.material) ? o.material[0] : o.material;
     if (m.transparent && m.opacity < 0.5) return;
     let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    toFloatAttrs(g, ['position', 'normal']);
     g.applyMatrix4(o.matrixWorld);
     for (const k of Object.keys(g.attributes)) if (!['position', 'normal'].includes(k)) g.deleteAttribute(k);
     for (const k of ['position', 'normal']) {

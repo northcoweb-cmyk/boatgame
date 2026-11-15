@@ -170,7 +170,7 @@ export class WakeSystem {
       st.distAccum -= spacing;
       if (V < 0.8) break;
       const spread = V * KELVIN;
-      const ampK = 0.1 * sizeK * smoothstep(0.8, 5, V) * (1.15 - 0.45 * smoothstep(8, 18, V)) * clamp(st.wet * 1.5, 0.3, 1);
+      const ampK = 0.035 * Math.min(sizeK, 2.2) * smoothstep(0.8, 5, V) * (1.15 - 0.45 * smoothstep(8, 18, V)) * clamp(st.wet * 1.5, 0.3, 1);
       const hb = st.beam * 0.42;
       for (const s of [-1, 1]) {
         // Kelvin arms: thin streaks aligned with the arm direction

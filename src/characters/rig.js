@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from '../../vendor/three/addons/utils/BufferGeometryUtils.js';
 import { clamp, smoothstep, lerp } from '../core/math.js';
+import { toFloatAttrs } from '../assets/assets.js';
 
 const BONES = ['hips', 'spine', 'chest', 'neck', 'head',
   'lUpperArm', 'lForeArm', 'lHand', 'rUpperArm', 'rForeArm', 'rHand',
@@ -22,6 +23,7 @@ export function prepareRig(manModel) {
   manModel.traverse((o) => {
     if (!o.isMesh) return;
     const g = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone());
+    toFloatAttrs(g, ['position', 'normal', 'uv']);
     g.applyMatrix4(o.matrixWorld);
     for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
     for (const k of ['position', 'normal', 'uv']) {
